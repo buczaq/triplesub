@@ -61,8 +61,7 @@ button:disabled{opacity:.35;cursor:default}
   padding:8px 10px;display:none;flex-direction:column;gap:6px;
 }
 #dart-panel.visible{display:flex}
-#dp-title{font-size:10px;letter-spacing:3px;color:var(--accent);
-  text-align:center;padding-bottom:4px;border-bottom:1px solid var(--border)}
+#dp-title{font-size:10px;letter-spacing:3px;color:var(--accent)}
 .dp-mult-row{display:flex;gap:6px}
 .dp-mult-row button,.dp-num-grid button,.dp-special-row button{
   flex:1;padding:10px 4px;font-size:12px;letter-spacing:1px;
@@ -203,6 +202,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
 /* ════════════════════════════════════════════
    RESPONSIVE — mobile
 ════════════════════════════════════════════ */
+/* ── DIFFICULTY BUTTONS ── */
+.active-diff{background:var(--success);border-color:var(--success);color:var(--bg)}
+.btn-diff-gen{border-color:var(--danger);color:var(--danger)}
+.btn-diff-gen.active-diff{background:var(--danger)}
+.btn-diff-col{border-color:var(--gold);color:var(--gold)}
+.btn-diff-col.active-diff{background:var(--gold)}
+/* ── HIGHSCORE TABS ── */
+.hs-tab-btn{padding:5px 14px;font-size:11px;letter-spacing:2px}
+.hs-tab-btn.active-diff{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+
 @media(max-width:700px){
   :root{--panel-h:240px}
   #app{padding:6px;padding-bottom:calc(var(--panel-h) + 12px)}
@@ -215,6 +224,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
   h2{font-size:13px}
   .hs-table .hide-mobile{display:none}
   .scoring-body > div:last-child{display:none} /* hide scoring canvas col */
+  /* Collapsible input panel on mobile */
+  #dp-collapse-btn{display:block !important}
+  #dart-panel.panel-collapsed .dp-mult-row,
+  #dart-panel.panel-collapsed .dp-num-grid,
+  #dart-panel.panel-collapsed .dp-special-row,
+  #dart-panel.panel-collapsed .dp-bot-row{display:none !important}
+  #dart-panel.panel-collapsed{padding:5px 10px}
 }
 @media(max-width:400px){
   :root{--panel-h:260px}
@@ -237,13 +253,29 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span></div>
   <h1>TRIPLE SUBMERGE</h1>
   <div class="dim" style="font-size:11px;letter-spacing:3px">a dartboard survival game</div>
+  <div style="display:flex;gap:8px;flex-direction:column;align-items:center;width:100%;max-width:420px">
+    <div class="label" style="margin-bottom:2px">DIFFICULTY</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <button id="diff-captain" class="btn-s active-diff" onclick="setDifficulty('captain')">CAPTAIN</button>
+      <button id="diff-colonel" class="btn-diff-col" onclick="setDifficulty('colonel')">COLONEL</button>
+      <button id="diff-general" class="btn-diff-gen" onclick="setDifficulty('general')">GENERAL</button>
+    </div>
+    <div id="diff-desc" style="font-size:10px;color:var(--dim);letter-spacing:1px;min-height:14px">standard challenge</div>
+  </div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
     <button class="btn-a" onclick="startGame()" style="font-size:14px;padding:10px 28px">▶ DIVE IN</button>
     <button onclick="showScreen('highscores')">⊞ SCORES</button>
   </div>
   <div id="menu-hs" class="pnl" style="width:100%;max-width:420px;display:none"></div>
-  <div style="color:var(--dim);font-size:10px;letter-spacing:2px;line-height:1.9;max-width:460px">
-    THROW REAL DARTS · ENTER RESULTS · SURVIVE THE HUNT</div>
+  <div style="color:var(--dim);font-size:10px;letter-spacing:1px;line-height:2.0;max-width:500px;text-align:left" class="pnl">
+    <span style="color:var(--bright)">HOW TO PLAY</span><br>
+    THROW REAL DARTS · ENTER RESULTS · SURVIVE THE HUNT<br>
+    COMPLETE 3 MISSION OBJECTIVES PER MISSION TO EARN XP<br>
+    <span style="color:var(--gold)">+2 XP BONUS PER DOUBLE · +3 XP BONUS PER TRIPLE</span> (thrown in mission rounds)<br>
+    AFTER EVERY 2 MISSIONS: SCORING ROUND (9 DARTS, XP = SCORE ÷ 10)<br>
+    THEN: HUNT — SURVIVE IF YOUR XP EXCEEDS THE THRESHOLD<br>
+    IF CAUGHT: 301 DUEL (SINGLE-IN, SINGLE-OUT) — WIN OR DIE
+  </div>
 </div>
 
 <!-- ═══════════════════ STORY ═══════════════════ -->
@@ -399,6 +431,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
   <div style="text-align:center;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:14px">
     <div class="danger" style="font-size:11px;letter-spacing:4px">◈ SUBMARINE DESTROYED ◈</div>
     <h1 style="color:var(--danger)">GAME OVER</h1>
+    <div style="font-size:12px;color:var(--dim);letter-spacing:1px;line-height:1.8;max-width:440px;font-style:italic">
+      Thank you for your service. You are a hero, and your sacrifice will never be forgotten.</div>
     <div class="score-box">
       <div class="label">FINAL SCORE</div>
       <div class="val-lg" id="go-xp" style="font-size:30px">0000</div>
@@ -422,9 +456,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
 <div id="screen-highscores" class="screen">
   <div style="text-align:center;padding:12px 0"><h2>⊞ HIGH SCORES</h2></div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:16px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <button id="hs-tab-captain" class="hs-tab-btn active-diff" onclick="setHsTab('captain')">CAPTAIN</button>
+      <button id="hs-tab-colonel" class="hs-tab-btn" onclick="setHsTab('colonel')">COLONEL</button>
+      <button id="hs-tab-general" class="hs-tab-btn" onclick="setHsTab('general')">GENERAL</button>
+    </div>
     <table class="hs-table">
       <thead><tr>
-        <th>#</th><th>CAPTAIN</th><th>XP</th>
+        <th>#</th><th>NAME</th><th>XP</th>
         <th class="hide-mobile">MISSIONS</th><th class="hide-mobile">GOALS</th>
         <th>HUNTS</th><th class="hide-mobile">DUELS</th>
       </tr></thead>
@@ -443,7 +482,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
      FIXED BOTTOM DART INPUT PANEL
 ════════════════════════════════════════════ -->
 <div id="dart-panel">
-  <div id="dp-title">THROW DART</div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div id="dp-title" style="font-size:10px;letter-spacing:3px;color:var(--accent)">THROW DART</div>
+    <button id="dp-collapse-btn" onclick="togglePanelCollapse()"
+      style="display:none;font-size:10px;padding:2px 8px;min-height:auto;letter-spacing:1px;
+             border-color:var(--border);color:var(--dim)">▼ HIDE</button>
+  </div>
   <div class="dp-mult-row">
     <button id="mb1" class="active-mult" onclick="setMult(1)">SINGLE</button>
     <button id="mb2" onclick="setMult(2)">DOUBLE</button>
@@ -477,24 +521,29 @@ const GOAL_XP = {
   score_lesser:12,same_seg_round:13,hit_any_double:15,
   hit_any_triple:20,hit_specific_double:20,hit_specific_triple:30,hit_bull:25,
   more_evens:5,more_odds:5,round_only_odd:5,round_only_even:5,
-  increasing_round:11,decreasing_round:12
+  increasing_round:11,decreasing_round:12,
+  score_range_round:10,no_repeat_seg:8,score_exact_round:21
 };
 const SCORE_GT_RANGE={1:[18,38],2:[35,65],3:[60,90],4:[80,120]};
 const SCORE_LT_RANGE={2:[32,52],3:[24,42],4:[16,34]};
 const TIER_GOALS={
   1:['avoid_segments','score_greater','hit_segments','same_seg_9',
-     'more_evens','more_odds','round_only_odd','round_only_even','increasing_round'],
+     'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
+     'score_range_round','no_repeat_seg'],
   2:['avoid_segments','score_greater','hit_segments','same_seg_9',
      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
-     'score_lesser','same_seg_round','hit_any_double','decreasing_round'],
+     'score_lesser','same_seg_round','hit_any_double','decreasing_round',
+     'score_range_round','no_repeat_seg','score_exact_round'],
   3:['avoid_segments','score_greater','hit_segments','same_seg_9',
      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
      'score_lesser','same_seg_round','hit_any_double','decreasing_round',
-     'hit_any_triple','hit_specific_double','hit_bull'],
+     'hit_any_triple','hit_specific_double','hit_bull',
+     'score_range_round','no_repeat_seg','score_exact_round'],
   4:['avoid_segments','score_greater','hit_segments','same_seg_9',
      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
      'score_lesser','same_seg_round','hit_any_double','decreasing_round',
-     'hit_any_triple','hit_specific_double','hit_bull','hit_specific_triple']
+     'hit_any_triple','hit_specific_double','hit_bull','hit_specific_triple',
+     'score_range_round','no_repeat_seg','score_exact_round']
 };
 const TIER_RANGES={1:[20,30],2:[30,40],3:[40,50],4:[50,90]};
 const TIER_NAMES={1:'TIER I',2:'TIER II',3:'TIER III',4:'TIER IV'};
@@ -503,12 +552,16 @@ const TIER_NAMES={1:'TIER I',2:'TIER II',3:'TIER III',4:'TIER IV'};
 // STATE
 // ═══════════════════════════════════════════════════════════
 let G={};
+let selectedDifficulty='captain';
+let hsTab='captain';
+
 function initState(){
   G={
     missionNum:1,xp:0,completedGoals:0,missionsCompleted:0,
     huntsCompleted:0,huntNum:1,duelCount:0, // duelCount: how many duels fought
     mission:null,allDarts:[],rounds:[[],[],[]],roundIdx:0,dartIdx:0,
     scoreDarts:[],huntThreshold:0,newScoreIndex:-1,
+    difficulty:'captain',
   };
 }
 
@@ -577,7 +630,12 @@ function activateInput(title,cb,undo){
 
 function hideDartPanel(){
   dartInputCb=null;undoCb=null;
-  document.getElementById('dart-panel').classList.remove('visible');
+  const panel=document.getElementById('dart-panel');
+  panel.classList.remove('visible');
+  // Reset collapse state for next activation
+  panel.classList.remove('panel-collapsed');
+  const btn=document.getElementById('dp-collapse-btn');if(btn)btn.textContent='▼ HIDE';
+  document.documentElement.style.setProperty('--panel-h',window.innerWidth<=400?'260px':window.innerWidth<=700?'240px':'200px');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -602,6 +660,9 @@ function createGoal(type,tier=1){
     case 'round_only_even':return{type,xp:5,desc:'Hit only even-numbered segments in one round'};
     case 'increasing_round':return{type,xp:11,desc:'Hit strictly increasing scores in one round'};
     case 'decreasing_round':return{type,xp:12,desc:'Hit strictly decreasing scores in one round'};
+    case 'score_range_round':{const lo=rnd(18,40);const hi=lo+5;return{type,lo,hi,xp:10,desc:`Score between ${lo} and ${hi} in one round`};}
+    case 'no_repeat_seg':return{type,xp:8,desc:'No segment hit more than 3 times (9 darts)'};
+    case 'score_exact_round':{const t=rnd(15,45);return{type,target:t,xp:21,desc:`Score exactly ${t} in one round`};}
   }
 }
 
@@ -611,6 +672,8 @@ function goalsIdentical(a,b){
     case 'avoid_segments':case 'hit_segments':return[...a.segments].sort().join()===[...b.segments].sort().join();
     case 'score_greater':case 'score_lesser':return a.threshold===b.threshold;
     case 'hit_specific_double':case 'hit_specific_triple':return a.segment===b.segment;
+    case 'score_range_round':return a.lo===b.lo;
+    case 'score_exact_round':return a.target===b.target;
     default:return true;
   }
 }
@@ -634,6 +697,9 @@ function evalGoal(goal,allDarts,rounds){
     case 'round_only_even':return rounds.some(r=>r.length===3&&r.every(d=>d.segment!==null&&d.segment%2===0));
     case 'increasing_round':return rounds.some(r=>r.length===3&&r[0].score<r[1].score&&r[1].score<r[2].score);
     case 'decreasing_round':return rounds.some(r=>r.length===3&&r[0].score>r[1].score&&r[1].score>r[2].score);
+    case 'score_range_round':return rounds.some(r=>{const s=r.reduce((t,d)=>t+d.score,0);return s>=goal.lo&&s<=goal.hi;});
+    case 'no_repeat_seg':{const c={};allDarts.forEach(d=>{if(d.segment!==null)c[d.segment]=(c[d.segment]||0)+1;});return!Object.values(c).some(v=>v>3);}
+    case 'score_exact_round':return rounds.some(r=>r.length===3&&r.reduce((t,d)=>t+d.score,0)===goal.target);
   }
   return false;
 }
@@ -744,7 +810,7 @@ function setupBoard(id,cb){
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById(`screen-${name}`);if(el)el.classList.add('active');
-  if(name==='highscores')renderHighscores();
+  if(name==='highscores'){setHsTab(hsTab);} // renders highscores + updates tab highlight
   if(name==='menu'){hideDartPanel();renderMenuHs();}
   if(!['mission','scoring','duel'].includes(name))hideDartPanel();
 }
@@ -752,8 +818,37 @@ function showScreen(name){
 // ═══════════════════════════════════════════════════════════
 // GAME FLOW
 // ═══════════════════════════════════════════════════════════
-function startGame(){initState();showScreen('story');}
+function startGame(){initState();G.difficulty=selectedDifficulty;showScreen('story');}
 function continueFromStory(){beginMission();}
+
+function setDifficulty(d){
+  selectedDifficulty=d;
+  ['captain','colonel','general'].forEach(n=>{
+    const btn=document.getElementById('diff-'+n);
+    btn.classList.toggle('active-diff',n===d);
+  });
+  const descs={captain:'standard challenge',colonel:'+20% hunt threshold · enemy +10% stronger',general:'+40% hunt threshold · enemy +30% stronger'};
+  document.getElementById('diff-desc').textContent=descs[d];
+}
+
+function setHsTab(d){
+  hsTab=d;
+  ['captain','colonel','general'].forEach(n=>{
+    const btn=document.getElementById('hs-tab-'+n);if(btn)btn.classList.toggle('active-diff',n===d);
+  });
+  renderHighscores();
+}
+
+function togglePanelCollapse(){
+  const panel=document.getElementById('dart-panel');
+  const collapsed=panel.classList.toggle('panel-collapsed');
+  document.getElementById('dp-collapse-btn').textContent=collapsed?'▲ SHOW':'▼ HIDE';
+  // Update padding so content isn't hidden under collapsed panel
+  if(window.innerWidth<=700){
+    const h=collapsed?'36px':(window.innerWidth<=400?'260px':'240px');
+    document.documentElement.style.setProperty('--panel-h',h);
+  }
+}
 
 function beginMission(){
   const{goals,tier}=generateMission(G.missionNum);
@@ -850,14 +945,19 @@ function finalizeMission(){
   const cr=G.rounds.filter(r=>r.length===3);
   let gainedXP=0,completedGoals=0;
   G.mission.goals.forEach(g=>{if(evalGoal(g,G.allDarts,cr)){gainedXP+=g.xp;completedGoals++;}});
-  G.xp+=gainedXP;G.completedGoals+=completedGoals;G.missionsCompleted++;
+  // Bonus XP for doubles and triples thrown in mission rounds
+  const doubles=G.allDarts.filter(d=>d.type==='double').length;
+  const triples=G.allDarts.filter(d=>d.type==='triple').length;
+  const bonusXP=doubles*2+triples*3;
+  G.xp+=gainedXP+bonusXP;G.completedGoals+=completedGoals;G.missionsCompleted++;
   const summary=document.getElementById('mission-summary');
+  const bonusLine=bonusXP>0?`<div style="margin-bottom:4px"><span class="accent">◈</span> Doubles ×${doubles} / Triples ×${triples} <span class="success">+${bonusXP} xp</span></div>`:'';
   document.getElementById('summary-content').innerHTML=
     G.mission.goals.map(g=>{
       const done=evalGoal(g,G.allDarts,cr);
       return`<div style="margin-bottom:4px">${done?'<span class="success">✓</span>':'<span class="danger">✗</span>'} ${g.desc} <span class="${done?'success':'dim'}">${done?'+'+g.xp:'0'} xp</span></div>`;
-    }).join('')+
-    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between"><span class="label">XP GAINED</span><span class="val success">+${gainedXP}</span></div>`;
+    }).join('')+bonusLine+
+    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between"><span class="label">XP GAINED</span><span class="val success">+${gainedXP+bonusXP}</span></div>`;
   summary.style.display='block';
   document.getElementById('m-xp').textContent=pad(G.xp);
   document.getElementById('dart-prompt').textContent='MISSION COMPLETE';
@@ -930,8 +1030,12 @@ function afterScoring(){beginHunt();}
 // ═══════════════════════════════════════════════════════════
 // HUNT
 // ═══════════════════════════════════════════════════════════
+function diffMultiplier(){
+  return G.difficulty==='general'?1.4:G.difficulty==='colonel'?1.2:1.0;
+}
+
 function beginHunt(){
-  const base=12+(G.huntNum-1)*35;
+  const base=Math.round((12+(G.huntNum-1)*35)*diffMultiplier());
   G.huntThreshold=base+rnd(-8,8);
   showScreen('hunt');
   document.getElementById('hunt-num').textContent=String(G.huntNum).padStart(2,'0');
@@ -1003,21 +1107,24 @@ let DS={};
 
 function beginDuel(){
   G.duelCount++;
-  // Enemy avg: based on number of duels fought (encounter-based, not stage-based)
-  // Duel 1 = easy (avg 20), increases by 7 each time, cap at 78
   const enc=G.duelCount;
+  // Enemy per-3-darts avg: starts at 30, +5 per encounter, scaled by difficulty
+  const dMult=G.difficulty==='general'?1.3:G.difficulty==='colonel'?1.1:1.0;
+  const baseTarget3=Math.min(30+(enc-1)*5,80); // 30,35,40,...,80
+  const displayAvg=Math.round(Math.min(baseTarget3*dMult,95));
   DS={
     playerScore:301,enemyScore:301,
     isPlayerTurn:true,currentDarts:[],
     playerStartScore:301,enemyStartScore:301,
-    enemyAvg:Math.min(20+(enc-1)*7,78),
+    enemyAvg:displayAvg, // per-3-darts for display
     encounter:enc,
+    diffMult:dMult,
     won:null,animating:false,enemyRevealDarts:[],
     playerTotalScored:0,playerDartsThrown:0,
     enemyTotalScored:0,enemyDartsThrown:0,
   };
   document.getElementById('duel-enc-num').textContent=enc;
-  document.getElementById('duel-enemy-avg').textContent=DS.enemyAvg;
+  document.getElementById('duel-enemy-avg').textContent=displayAvg+' /3darts';
   document.getElementById('duel-result-overlay').classList.remove('show');
   showScreen('duel');
   setupBoard('dartboard-canvas-d',duelPlayerDart);
@@ -1117,7 +1224,7 @@ function startEnemyTurn(){
   DS.isPlayerTurn=false;DS.animating=true;DS.enemyRevealDarts=[];
   DS.enemyStartScore=DS.enemyScore;
   setDuelMsg('ENEMY AIMING...','var(--danger)');renderDuelUI();
-  const result=generateEnemyTurn(DS.enemyScore,DS.enemyAvg,DS.encounter);
+  const result=generateEnemyTurn(DS.enemyScore,DS.encounter,DS.diffMult);
   const bc=document.getElementById('dartboard-canvas-d');
   let i=0;
   function revealNext(){
@@ -1175,28 +1282,46 @@ function scoreToLabel(score){
   return best||{score:1,type:'single',segment:1,label:'1'};
 }
 
-function generateEnemyTurn(startScore,avg,encounter){
-  // skill: 0 = encounter 1, grows toward 1 over encounters
-  // Controls how often the enemy plays conservatively in finish territory
-  const skill=Math.min(0.95,(encounter-1)*0.14);
-  const missChance=Math.max(0.03,0.25-(avg-20)*0.006);
-  const variance=Math.floor(avg*0.55);
+function generateEnemyTurn(startScore,encounter,dMult){
+  const enc=encounter;
+  // skill: 0 at enc 1, grows to 0.9 over encounters
+  const skill=Math.min(0.90,(enc-1)*0.10);
+  // Per-dart average target (including misses)
+  const target3=Math.min((30+(enc-1)*5)*dMult,95);
+  const targetPerDart=target3/3;
+  // Miss probability: higher early, lower later
+  const missChance=Math.max(0.04,0.18-(enc-1)*0.015);
+  // Non-miss per-dart target (account for misses reducing avg)
+  const nonMissTarget=targetPerDart/Math.max(0.1,1-missChance);
+  // Multiplier probabilities: mostly singles early, more doubles/triples later
+  const tripleProb=Math.min(0.12,0.005+skill*0.13);
+  const doubleProb=Math.min(0.28,0.015+skill*0.27);
+
   const darts=[];let tempScore=startScore,busted=false,won=false;
   for(let i=0;i<3;i++){
     if(busted||won)break;
-    let targetScore;
-    if(Math.random()<missChance){
-      targetScore=0;
-    }else{
-      targetScore=avg+rnd(-variance,variance);
-      targetScore=Math.min(60,Math.max(1,targetScore));
-      // Smart finishing: when remaining is within reach of a bad throw,
-      // skilled enemy caps shot to avoid busting
-      if(tempScore<=avg+variance&&Math.random()<skill){
-        targetScore=Math.min(targetScore,tempScore);
-      }
+    let dart;
+    // Smart checkout: when in single-dart finish territory, skilled enemy aims exactly
+    if(tempScore>=1&&tempScore<=20&&skill>0.35&&Math.random()<skill*0.75){
+      dart={score:tempScore,type:'single',segment:tempScore,label:`${tempScore}`};
+    } else if(Math.random()<missChance){
+      dart={score:0,type:'miss',segment:null,label:'MISS'};
+    } else {
+      // Pick multiplier based on skill
+      const r=Math.random();
+      let mult;
+      if(r<tripleProb)mult=3;
+      else if(r<tripleProb+doubleProb)mult=2;
+      else mult=1;
+      // Pick segment aiming for nonMissTarget/mult
+      const targetSeg=Math.round(nonMissTarget/mult);
+      const variance=Math.max(3,Math.floor(targetSeg*0.55));
+      const seg=Math.min(20,Math.max(1,targetSeg+rnd(-variance,variance)));
+      const score=seg*mult;
+      const type=mult===3?'triple':mult===2?'double':'single';
+      const label=mult===3?`T${seg}`:mult===2?`D${seg}`:`${seg}`;
+      dart={score,type,segment:seg,label};
     }
-    const dart=scoreToLabel(targetScore);
     const newTemp=tempScore-dart.score;
     if(newTemp<0){busted=true;darts.push({...dart,busted:true});}
     else{tempScore=newTemp;darts.push(dart);if(tempScore===0)won=true;}
@@ -1238,24 +1363,30 @@ function gameOver(){
 // ═══════════════════════════════════════════════════════════
 // HIGHSCORES
 // ═══════════════════════════════════════════════════════════
-function loadScores(){try{return JSON.parse(localStorage.getItem('triple_submerge_hs')||'[]');}catch{return[];}}
-function saveScores(sc){localStorage.setItem('triple_submerge_hs',JSON.stringify(sc));}
+function hsKey(diff){return'triple_submerge_hs_'+(diff||'captain');}
+function loadScores(diff){try{return JSON.parse(localStorage.getItem(hsKey(diff))||'[]');}catch{return[];}}
+function saveScores(sc,diff){localStorage.setItem(hsKey(diff),JSON.stringify(sc));}
 
 function submitScore(){
   const name=(document.getElementById('input-name').value.trim()||'CAPTAIN').toUpperCase().slice(0,10);
-  const scores=loadScores();
+  const diff=G.difficulty||'captain';
+  const scores=loadScores(diff);
   const entry={name,xp:G.xp,missions:G.missionsCompleted,goals:G.completedGoals,
     hunts:G.huntsCompleted,duels:G.duelCount,date:new Date().toISOString()};
   scores.push(entry);scores.sort((a,b)=>b.xp-a.xp);
   const top=scores.slice(0,15);G.newScoreIndex=top.indexOf(entry);
-  saveScores(top);showScreen('highscores');
+  saveScores(top,diff);
+  hsTab=diff; // show the tab of the played difficulty
+  setHsTab(diff);
+  showScreen('highscores');
 }
 
 function renderHighscores(){
-  const scores=loadScores();
+  const scores=loadScores(hsTab);
   const tbody=document.getElementById('hs-body');
   if(!scores.length){tbody.innerHTML='<tr><td colspan="7" style="color:var(--dim);padding:16px;text-align:center">NO SCORES YET</td></tr>';return;}
-  tbody.innerHTML=scores.map((s,i)=>`<tr class="${G.newScoreIndex===i?'new-score':''}">
+  const highlightIdx=(hsTab===(G.difficulty||'captain'))?G.newScoreIndex:-1;
+  tbody.innerHTML=scores.map((s,i)=>`<tr class="${highlightIdx===i?'new-score':''}">
     <td>${i+1}</td><td>${s.name}</td><td><strong>${pad(s.xp)}</strong></td>
     <td class="hide-mobile">${s.missions||0}</td>
     <td class="hide-mobile">${s.goals||0}</td>
@@ -1265,11 +1396,13 @@ function renderHighscores(){
 }
 
 function renderMenuHs(){
-  const scores=loadScores().slice(0,3);
+  // Show top 3 from the selected difficulty
+  const scores=loadScores(selectedDifficulty).slice(0,3);
   const el=document.getElementById('menu-hs');
   if(!scores.length){el.style.display='none';return;}
   el.style.display='block';
-  el.innerHTML='<h3 style="text-align:center;margin-bottom:8px">TOP CAPTAINS</h3>'+
+  const dLabel=selectedDifficulty.toUpperCase();
+  el.innerHTML=`<h3 style="text-align:center;margin-bottom:8px">TOP — ${dLabel}</h3>`+
     scores.map((s,i)=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">
       <span class="dim">${['I','II','III'][i]}.</span><span>${s.name}</span>
       <span class="val">${pad(s.xp)} xp</span></div>`).join('');
