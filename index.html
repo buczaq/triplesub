@@ -1114,7 +1114,9 @@ function beginDuel(){
   const displayAvg=Math.round(Math.min(baseTarget3*dMult,95));
   // Bust budget: how many times the enemy is allowed to bust this whole duel
   // Early duels: 1-3, later duels converge toward 0-1
-  const maxBusts=Math.max(0,rnd(Math.max(0,3-Math.floor(enc/2)),Math.max(1,3-Math.floor(enc/3))));
+  const bustHi=enc<=2?3:enc===3?2:1;
+  const bustLo=enc===1?3:enc===2?2:enc===3?1:0;
+  const maxBusts=rnd(bustLo,bustHi);
   DS={
     playerScore:301,enemyScore:301,
     isPlayerTurn:true,currentDarts:[],
