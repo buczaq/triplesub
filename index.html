@@ -827,7 +827,7 @@ function setDifficulty(d){
     const btn=document.getElementById('diff-'+n);
     btn.classList.toggle('active-diff',n===d);
   });
-  const descs={captain:'standard challenge',colonel:'+20% hunt threshold · enemy +10% stronger',general:'+40% hunt threshold · enemy +30% stronger'};
+  const descs={captain:'standard challenge',colonel:'+40% hunt threshold · enemy +20% stronger',general:'+100% hunt threshold · enemy +50% stronger'};
   document.getElementById('diff-desc').textContent=descs[d];
 }
 
@@ -1031,7 +1031,7 @@ function afterScoring(){beginHunt();}
 // HUNT
 // ═══════════════════════════════════════════════════════════
 function diffMultiplier(){
-  return G.difficulty==='general'?1.4:G.difficulty==='colonel'?1.2:1.0;
+  return G.difficulty==='general'?2.0:G.difficulty==='colonel'?1.4:1.0;
 }
 
 function beginHunt(){
@@ -1109,9 +1109,12 @@ function beginDuel(){
   G.duelCount++;
   const enc=G.duelCount;
   // Enemy per-3-darts avg: starts at 30, +5 per encounter, scaled by difficulty
-  const dMult=G.difficulty==='general'?1.3:G.difficulty==='colonel'?1.1:1.0;
+  const dMult=G.difficulty==='general'?1.5:G.difficulty==='colonel'?1.2:1.0;
   const baseTarget3=Math.min(30+(enc-1)*5,80); // 30,35,40,...,80
   const displayAvg=Math.round(Math.min(baseTarget3*dMult,95));
+  // Bust budget: how many times the enemy is allowed to bust this whole duel
+  // Early duels: 1-3, later duels converge toward 0-1
+  const maxBusts=Math.max(0,rnd(Math.max(0,3-Math.floor(enc/2)),Math.max(1,3-Math.floor(enc/3))));
   DS={
     playerScore:301,enemyScore:301,
     isPlayerTurn:true,currentDarts:[],
@@ -1119,6 +1122,7 @@ function beginDuel(){
     enemyAvg:displayAvg, // per-3-darts for display
     encounter:enc,
     diffMult:dMult,
+    bustBudget:maxBusts, // remaining busts allowed
     won:null,animating:false,enemyRevealDarts:[],
     playerTotalScored:0,playerDartsThrown:0,
     enemyTotalScored:0,enemyDartsThrown:0,
@@ -1224,7 +1228,8 @@ function startEnemyTurn(){
   DS.isPlayerTurn=false;DS.animating=true;DS.enemyRevealDarts=[];
   DS.enemyStartScore=DS.enemyScore;
   setDuelMsg('ENEMY AIMING...','var(--danger)');renderDuelUI();
-  const result=generateEnemyTurn(DS.enemyScore,DS.encounter,DS.diffMult);
+  const result=generateEnemyTurn(DS.enemyScore,DS.encounter,DS.diffMult,DS.bustBudget);
+  if(result.usedBust)DS.bustBudget=Math.max(0,DS.bustBudget-1);
   const bc=document.getElementById('dartboard-canvas-d');
   let i=0;
   function revealNext(){
@@ -1282,51 +1287,58 @@ function scoreToLabel(score){
   return best||{score:1,type:'single',segment:1,label:'1'};
 }
 
-function generateEnemyTurn(startScore,encounter,dMult){
+function generateEnemyTurn(startScore,encounter,dMult,bustBudget){
   const enc=encounter;
-  // skill: 0 at enc 1, grows to 0.9 over encounters
   const skill=Math.min(0.90,(enc-1)*0.10);
-  // Per-dart average target (including misses)
   const target3=Math.min((30+(enc-1)*5)*dMult,95);
   const targetPerDart=target3/3;
-  // Miss probability: higher early, lower later
   const missChance=Math.max(0.04,0.18-(enc-1)*0.015);
-  // Non-miss per-dart target (account for misses reducing avg)
   const nonMissTarget=targetPerDart/Math.max(0.1,1-missChance);
-  // Multiplier probabilities: mostly singles early, more doubles/triples later
   const tripleProb=Math.min(0.12,0.005+skill*0.13);
   const doubleProb=Math.min(0.28,0.015+skill*0.27);
 
   const darts=[];let tempScore=startScore,busted=false,won=false;
+  let localBust=false; // did we bust this turn?
+
   for(let i=0;i<3;i++){
     if(busted||won)break;
     let dart;
-    // Smart checkout: when in single-dart finish territory, skilled enemy aims exactly
+    // Smart checkout: single-dart finish territory
     if(tempScore>=1&&tempScore<=20&&skill>0.35&&Math.random()<skill*0.75){
       dart={score:tempScore,type:'single',segment:tempScore,label:`${tempScore}`};
     } else if(Math.random()<missChance){
       dart={score:0,type:'miss',segment:null,label:'MISS'};
     } else {
-      // Pick multiplier based on skill
+      // Pick multiplier
       const r=Math.random();
       let mult;
       if(r<tripleProb)mult=3;
       else if(r<tripleProb+doubleProb)mult=2;
       else mult=1;
-      // Pick segment aiming for nonMissTarget/mult
       const targetSeg=Math.round(nonMissTarget/mult);
       const variance=Math.max(3,Math.floor(targetSeg*0.55));
-      const seg=Math.min(20,Math.max(1,targetSeg+rnd(-variance,variance)));
-      const score=seg*mult;
+      let seg=Math.min(20,Math.max(1,targetSeg+rnd(-variance,variance)));
+      let score=seg*mult;
+
+      // Bust prevention: if budget exhausted and this dart would bust, cap it
+      if(bustBudget<=0&&tempScore-score<0){
+        // Force a safe dart — aim for tempScore or less with a single
+        const safeSeg=Math.min(20,Math.max(1,tempScore));
+        seg=safeSeg;mult=1;score=safeSeg;
+      }
       const type=mult===3?'triple':mult===2?'double':'single';
       const label=mult===3?`T${seg}`:mult===2?`D${seg}`:`${seg}`;
       dart={score,type,segment:seg,label};
     }
     const newTemp=tempScore-dart.score;
-    if(newTemp<0){busted=true;darts.push({...dart,busted:true});}
-    else{tempScore=newTemp;darts.push(dart);if(tempScore===0)won=true;}
+    if(newTemp<0){
+      busted=true;localBust=true;
+      darts.push({...dart,busted:true});
+    } else {
+      tempScore=newTemp;darts.push(dart);if(tempScore===0)won=true;
+    }
   }
-  return{darts,finalScore:busted?startScore:tempScore,won,busted};
+  return{darts,finalScore:busted?startScore:tempScore,won,busted,usedBust:localBust};
 }
 
 function duelWin(winner){
