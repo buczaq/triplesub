@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TRIPLE SUBMERGE</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -12,68 +12,90 @@
   --text:#6ab4d4;--bright:#b8e8ff;--dim:#3a6080;
   --accent:#e87830;--success:#30c870;--danger:#e83030;--gold:#f0c040;
   --sub:#203858;
+  --panel-h:200px; /* height of bottom input panel */
 }
 html,body{height:100%;background:var(--bg);color:var(--text);
-  font-family:'Courier New',monospace;font-size:13px;overflow-x:hidden}
+  font-family:'Courier New',monospace;font-size:13px;overflow-x:hidden;
+  touch-action:manipulation}
+/* ── APP SHELL ── */
 #app{min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:8px}
+  justify-content:flex-start;padding:8px;padding-bottom:calc(var(--panel-h) + 12px)}
 .screen{display:none;width:100%;max-width:1060px}
-.screen.active{display:flex;flex-direction:column}
-
+.screen.active{display:flex;flex-direction:column;gap:8px}
 /* ── PANELS ── */
 .pnl{background:var(--panel);border:2px solid var(--border);padding:12px;position:relative}
 .pnl::after{content:'';position:absolute;inset:3px;border:1px solid var(--border);
   opacity:.25;pointer-events:none}
 .pnl2{background:var(--panel2);border:2px solid var(--border2);padding:10px}
-
-/* ── TYPE ── */
-h1{font-size:28px;letter-spacing:8px;color:var(--bright);text-transform:uppercase}
-h2{font-size:16px;letter-spacing:4px;color:var(--bright);text-transform:uppercase;margin-bottom:8px}
-h3{font-size:12px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:6px}
+/* ── TYPOGRAPHY ── */
+h1{font-size:clamp(18px,5vw,28px);letter-spacing:6px;color:var(--bright);text-transform:uppercase}
+h2{font-size:clamp(13px,3vw,16px);letter-spacing:4px;color:var(--bright);text-transform:uppercase;margin-bottom:8px}
+h3{font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:6px}
 .label{font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
 .val{color:var(--bright);font-size:15px;letter-spacing:1px}
 .val-lg{color:var(--gold);font-size:22px;letter-spacing:2px}
 .success{color:var(--success)}.danger{color:var(--danger)}
 .accent{color:var(--accent)}.dim{color:var(--dim)}
-
 /* ── BUTTONS ── */
 button{background:var(--panel);border:2px solid var(--border);color:var(--bright);
-  font-family:inherit;font-size:12px;letter-spacing:2px;padding:7px 16px;
-  cursor:pointer;text-transform:uppercase;transition:all .12s}
+  font-family:inherit;font-size:12px;letter-spacing:2px;padding:7px 14px;
+  cursor:pointer;text-transform:uppercase;transition:background .1s,border-color .1s;
+  -webkit-tap-highlight-color:transparent;user-select:none}
+button:active:not(:disabled){opacity:.8}
 button:hover:not(:disabled){background:var(--border);border-color:var(--text)}
 button:disabled{opacity:.35;cursor:default}
 .btn-a{border-color:var(--accent);color:var(--accent)}
-.btn-a:hover:not(:disabled){background:var(--accent);color:var(--bg)}
+.btn-a:hover:not(:disabled),.btn-a:active:not(:disabled){background:var(--accent);color:var(--bg)}
 .btn-s{border-color:var(--success);color:var(--success)}
-.btn-s:hover:not(:disabled){background:var(--success);color:var(--bg)}
+.btn-s:hover:not(:disabled),.btn-s:active:not(:disabled){background:var(--success);color:var(--bg)}
 .btn-d{border-color:var(--danger);color:var(--danger)}
-.btn-d:hover:not(:disabled){background:var(--danger);color:var(--bg)}
+.btn-d:hover:not(:disabled),.btn-d:active:not(:disabled){background:var(--danger);color:var(--bg)}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
+/* ════════════════════════════════════════════
+   BOTTOM DART INPUT PANEL (fixed)
+════════════════════════════════════════════ */
+#dart-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:var(--panel2);border-top:2px solid var(--border2);
+  padding:8px 10px;display:none;flex-direction:column;gap:6px;
+}
+#dart-panel.visible{display:flex}
+#dp-title{font-size:10px;letter-spacing:3px;color:var(--accent);
+  text-align:center;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.dp-mult-row{display:flex;gap:6px}
+.dp-mult-row button,.dp-num-grid button,.dp-special-row button{
+  flex:1;padding:10px 4px;font-size:12px;letter-spacing:1px;
+  min-height:42px;touch-action:manipulation}
+.dp-mult-row button.active-mult{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.dp-num-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.dp-num-grid button{padding:8px 2px;font-size:13px;letter-spacing:0;min-height:42px}
+.dp-special-row{display:flex;gap:6px}
+.dp-bot-row{display:flex;gap:6px}
+.dp-bot-row button{flex:1;min-height:38px;font-size:11px}
+
 /* ── MENU ── */
-#screen-menu{align-items:center;justify-content:center;gap:20px;
-  text-align:center;padding:40px}
-.menu-art{color:var(--sub);font-size:11px;line-height:1.4;letter-spacing:1px;
-  white-space:pre;margin:10px 0}
+#screen-menu{align-items:center;justify-content:center;text-align:center;
+  padding:40px 20px;gap:16px}
+.menu-art{color:var(--sub);font-size:10px;line-height:1.4;letter-spacing:1px;
+  white-space:pre;margin:6px 0}
 .menu-art span{color:var(--text)}
-.hiscore-preview{width:100%;max-width:460px;margin-top:8px}
 
 /* ── STORY ── */
-#screen-story{align-items:center;justify-content:center;gap:20px;
-  text-align:center;padding:40px}
-.story-box{max-width:620px;text-align:left;line-height:2.1;font-size:13px;
-  border:1px solid var(--border);padding:24px;background:var(--panel);position:relative}
+#screen-story{align-items:center;justify-content:center;
+  text-align:center;padding:30px 16px;gap:16px}
+.story-box{max-width:600px;text-align:left;line-height:2.0;font-size:13px;
+  border:1px solid var(--border);padding:20px;background:var(--panel);position:relative}
 .story-box::before{content:'CLASSIFIED · OPERATION DEEP CURRENT';
   position:absolute;top:-10px;left:20px;background:var(--panel);
   padding:0 8px;font-size:9px;letter-spacing:3px;color:var(--accent)}
-.story-sentence{display:block;margin-bottom:12px}
+.story-sentence{display:block;margin-bottom:10px}
 .story-sentence:last-child{margin-bottom:0}
 
 /* ── MISSION ── */
-#screen-mission{gap:8px}
 .mission-header{display:flex;justify-content:space-between;align-items:center;
-  padding:8px 12px;background:var(--panel);border:2px solid var(--border)}
-.mission-body{display:flex;gap:8px;flex:1}
+  padding:8px 12px;background:var(--panel);border:2px solid var(--border);flex-wrap:wrap;gap:6px}
+.mission-body{display:flex;gap:8px}
 .mission-left{display:flex;flex-direction:column;gap:8px;flex:0 0 300px}
 .mission-right{flex:1;display:flex;flex-direction:column;gap:8px;align-items:center}
 .goal-item{padding:8px 10px;border:1px solid var(--border);margin-bottom:6px;
@@ -81,325 +103,290 @@ button:disabled{opacity:.35;cursor:default}
 .goal-item.done{border-color:var(--success)}
 .goal-item.done .goal-check{color:var(--success)}
 .goal-check{font-size:16px;flex-shrink:0;line-height:1.4;color:var(--dim)}
-.goal-text{flex:1;line-height:1.5}
+.goal-text{flex:1;line-height:1.5;font-size:12px}
 .goal-xp{color:var(--gold);font-size:11px;white-space:nowrap}
 .rounds-wrap{display:flex;flex-direction:column;gap:4px}
 .round-row{display:flex;align-items:center;gap:6px}
-.round-label{font-size:10px;color:var(--dim);letter-spacing:1px;width:54px;flex-shrink:0}
-.dart-slots{display:flex;gap:4px}
-.dart-slot{width:62px;height:28px;border:1px solid var(--border);display:flex;
-  align-items:center;justify-content:center;font-size:12px;letter-spacing:1px;
-  background:var(--bg);transition:all .15s}
+.round-label{font-size:10px;color:var(--dim);letter-spacing:1px;width:50px;flex-shrink:0}
+.dart-slots{display:flex;gap:3px}
+.dart-slot{height:26px;border:1px solid var(--border);display:flex;
+  align-items:center;justify-content:center;font-size:11px;letter-spacing:.5px;
+  background:var(--bg);min-width:54px;flex:1;transition:all .15s}
 .dart-slot.current{border-color:var(--accent);animation:pulse-border 1s ease-in-out infinite}
 .dart-slot.hit-single{color:var(--bright)}
 .dart-slot.hit-double{color:var(--success);border-color:var(--success)}
 .dart-slot.hit-triple{color:var(--gold);border-color:var(--gold)}
 .dart-slot.hit-bull{color:var(--accent)}
 .dart-slot.hit-miss{color:var(--dim);font-style:italic}
-.round-score{font-size:11px;color:var(--dim);width:30px;text-align:right}
-.board-hint{font-size:10px;color:var(--dim);letter-spacing:1px;text-align:center;margin-top:4px}
-.dart-ctrl{display:flex;gap:8px;justify-content:center;margin-top:6px}
+.round-score{font-size:11px;color:var(--dim);width:28px;text-align:right;flex-shrink:0}
 
 /* ── SCORING ── */
-#screen-scoring{align-items:center;gap:12px}
-.scoring-body{display:flex;gap:16px;align-items:flex-start;width:100%;max-width:860px}
-.scoring-left{flex:0 0 280px;display:flex;flex-direction:column;gap:8px}
+.scoring-body{display:flex;gap:12px;align-items:flex-start;width:100%}
+.scoring-left{flex:0 0 260px;display:flex;flex-direction:column;gap:8px}
 .scoring-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .scoring-slot{height:34px;border:1px solid var(--border);display:flex;align-items:center;
-  justify-content:center;font-size:13px;background:var(--bg)}
+  justify-content:center;font-size:13px;background:var(--bg);transition:all .15s}
 .scoring-slot.current{border-color:var(--accent);animation:pulse-border 1s ease-in-out infinite}
 .scoring-slot.hit-double{color:var(--success);border-color:var(--success)}
 .scoring-slot.hit-triple{color:var(--gold);border-color:var(--gold)}
 .scoring-slot.hit-bull{color:var(--accent)}
 .scoring-slot.hit-miss{color:var(--dim)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;
+  padding:4px 0;border-top:1px solid var(--border);margin-top:4px}
 
 /* ── HUNT ── */
-#screen-hunt{align-items:center;justify-content:center;gap:16px;
-  min-height:60vh;text-align:center}
+#screen-hunt{align-items:center;justify-content:center;text-align:center;gap:12px}
 .hunt-bars{display:flex;flex-direction:column;gap:8px;width:100%;max-width:400px;margin-top:8px}
 .bar-row{display:flex;align-items:center;gap:10px}
-.bar-label{width:100px;font-size:10px;letter-spacing:1px;color:var(--dim);text-align:right}
+.bar-label{width:90px;font-size:10px;letter-spacing:1px;color:var(--dim);text-align:right}
 .bar-outer{flex:1;height:16px;background:var(--bg);border:1px solid var(--border)}
-.bar-inner{height:100%;background:var(--text);transition:width .8s ease-out}
+.bar-inner{height:100%;transition:width .8s ease-out}
 .bar-inner.danger{background:var(--danger)}
 .bar-inner.success{background:var(--success)}
-.bar-val{width:60px;font-size:11px;text-align:left;color:var(--bright)}
-.hunt-status{font-size:14px;letter-spacing:3px;min-height:24px}
+.bar-inner.dim{background:var(--dim)}
+.bar-val{width:54px;font-size:11px;text-align:left;color:var(--bright)}
+.hunt-status{font-size:13px;letter-spacing:3px;min-height:22px}
 
 /* ── DUEL ── */
-#screen-duel{gap:8px}
 .duel-header{display:flex;justify-content:space-between;align-items:center;
-  padding:8px 14px;background:var(--panel);border:2px solid var(--danger)}
-.duel-body{display:flex;gap:10px;flex:1}
-.duel-left{flex:0 0 250px;display:flex;flex-direction:column;gap:8px}
+  padding:8px 12px;background:var(--panel);border:2px solid var(--danger);flex-wrap:wrap;gap:6px}
+.duel-body{display:flex;gap:10px}
+.duel-left{flex:0 0 240px;display:flex;flex-direction:column;gap:8px}
 .duel-right{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
-.duel-score-big{font-size:52px;letter-spacing:4px;font-weight:bold;
-  transition:color .3s;line-height:1.1;margin:6px 0}
+.duel-score-big{font-size:clamp(36px,8vw,52px);letter-spacing:4px;font-weight:bold;
+  line-height:1.1;margin:4px 0;transition:color .3s}
 .duel-score-big.player-col{color:var(--bright)}
 .duel-score-big.enemy-col{color:var(--danger)}
-.duel-score-big.bust-flash{color:var(--accent);animation:shake .4s ease}
-.duel-dart-row{display:flex;gap:4px;margin-top:6px;min-height:32px}
-.duel-chip{padding:4px 10px;border:1px solid var(--border);font-size:12px;
-  background:var(--bg);min-width:54px;text-align:center;letter-spacing:1px}
+.duel-dart-row{display:flex;gap:4px;margin-top:4px;min-height:30px;flex-wrap:wrap}
+.duel-chip{padding:4px 8px;border:1px solid var(--border);font-size:12px;
+  background:var(--bg);min-width:50px;text-align:center;letter-spacing:1px}
 .duel-chip.triple{border-color:var(--gold);color:var(--gold)}
 .duel-chip.double{border-color:var(--success);color:var(--success)}
 .duel-chip.bust-chip{border-color:var(--danger);color:var(--danger)}
 .duel-chip.miss-chip{color:var(--dim)}
-.duel-chip.current-chip{border-color:var(--accent);animation:pulse-border 1s infinite}
-.duel-chip.anim-in{animation:dart-appear .35s ease-out}
-.duel-msg{font-size:13px;letter-spacing:2px;min-height:22px;text-align:center;padding:8px}
+.duel-chip.cur-chip{border-color:var(--accent);animation:pulse-border 1s infinite}
+.duel-chip.anim-in{animation:dart-appear .3s ease-out}
+.duel-msg{font-size:13px;letter-spacing:2px;min-height:20px;text-align:center;padding:6px}
 .duel-turn-lbl{font-size:11px;letter-spacing:3px;padding:4px 0;text-align:center}
-.duel-result-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,15,.88);
+.duel-result-overlay{display:none;position:fixed;inset:0;background:rgba(4,8,15,.9);
   z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:20px;
   text-align:center}
 .duel-result-overlay.show{display:flex}
-.duel-result-big{font-size:26px;letter-spacing:6px;margin-bottom:8px}
+.duel-result-big{font-size:clamp(16px,4vw,26px);letter-spacing:4px}
 
 /* ── GAME OVER ── */
-#screen-gameover{align-items:center;justify-content:center;gap:16px;
-  text-align:center;padding:40px}
-.score-box{padding:20px 40px;border:2px solid var(--border);background:var(--panel);margin:10px 0}
+#screen-gameover{align-items:center;justify-content:center;text-align:center;padding:30px 16px;gap:16px}
+.score-box{padding:16px 30px;border:2px solid var(--border);background:var(--panel);margin:8px 0}
 #input-name{background:var(--bg);border:2px solid var(--border);color:var(--bright);
   font-family:inherit;font-size:14px;letter-spacing:2px;padding:8px 12px;
   text-transform:uppercase;outline:none;width:200px;text-align:center}
 #input-name:focus{border-color:var(--accent)}
 
 /* ── HIGHSCORES ── */
-#screen-highscores{align-items:center;gap:12px;padding:20px}
-.hs-table{width:100%;max-width:580px;border-collapse:collapse}
-.hs-table th{border-bottom:2px solid var(--border);padding:6px 10px;text-align:left;
+#screen-highscores{align-items:center;gap:12px;padding:16px}
+.hs-table{width:100%;max-width:560px;border-collapse:collapse;font-size:12px}
+.hs-table th{border-bottom:2px solid var(--border);padding:5px 8px;text-align:left;
   font-size:10px;letter-spacing:2px;color:var(--dim)}
-.hs-table td{padding:6px 10px;border-bottom:1px solid var(--border);font-size:12px}
+.hs-table td{padding:5px 8px;border-bottom:1px solid var(--border)}
 .hs-table tr.new-score td{color:var(--gold)}
-.hs-rank{color:var(--dim);width:30px}
 
 /* ── ANIMATIONS ── */
 @keyframes pulse-border{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-@keyframes dart-appear{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@keyframes dart-appear{0%{opacity:0;transform:scale(.5)}100%{opacity:1;transform:scale(1)}}
 .blink{animation:blink 1s step-end infinite}
 body::after{content:'';position:fixed;inset:0;pointer-events:none;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0px,rgba(0,0,0,.04) 1px,
   transparent 1px,transparent 4px);z-index:9999}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — mobile
+════════════════════════════════════════════ */
+@media(max-width:700px){
+  :root{--panel-h:240px}
+  #app{padding:6px;padding-bottom:calc(var(--panel-h) + 12px)}
+  .mission-body,.duel-body,.scoring-body{flex-direction:column}
+  .mission-left,.scoring-left,.duel-left{flex:none;width:100%}
+  .mission-right,.duel-right{display:none} /* hide canvas column on mobile */
+  .duel-right{display:none}
+  .dp-num-grid{grid-template-columns:repeat(5,1fr)}
+  .mission-header{font-size:11px}
+  h2{font-size:13px}
+  .hs-table .hide-mobile{display:none}
+  .scoring-body > div:last-child{display:none} /* hide scoring canvas col */
+}
+@media(max-width:400px){
+  :root{--panel-h:260px}
+  .dp-num-grid button{font-size:12px;min-height:38px}
+  .dp-mult-row button{font-size:11px}
+}
 </style>
 </head>
 <body>
 <div id="app">
 
-<!-- ═══════════════════════ MENU ═══════════════════════ -->
-<div id="screen-menu" class="screen">
+<!-- ═══════════════════ MENU ═══════════════════ -->
+<div id="screen-menu" class="screen" style="align-items:center;justify-content:center;text-align:center;padding:40px 16px;gap:16px">
   <div class="menu-art"><span>
-        ___  ___
-       /   \/   \    ~~~^~~~^~~~
-  ~~~~|  TRIPLE  |~~~~~~~~~~~~~~~~~~
-      |SUBMERGE  /=================--
-      |_____O___/
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span></div>
+      ___  ___
+     /   \/   \    ~~~^~~~^~~~
+~~~~|  TRIPLE  |~~~~~~~~~~~~~~~~~~
+    |SUBMERGE  /=================--
+    |_____O___/
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span></div>
   <h1>TRIPLE SUBMERGE</h1>
   <div class="dim" style="font-size:11px;letter-spacing:3px">a dartboard survival game</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-    <button class="btn-a" onclick="startGame()" style="font-size:14px;padding:10px 30px">▶ DIVE IN</button>
-    <button onclick="showScreen('highscores')">⊞ HIGH SCORES</button>
+    <button class="btn-a" onclick="startGame()" style="font-size:14px;padding:10px 28px">▶ DIVE IN</button>
+    <button onclick="showScreen('highscores')">⊞ SCORES</button>
   </div>
-  <div class="hiscore-preview pnl" id="menu-hs" style="margin-top:16px;display:none"></div>
-  <div style="margin-top:10px;color:var(--dim);font-size:10px;letter-spacing:2px;
-    max-width:500px;text-align:center;line-height:1.8">
-    COMPLETE MISSIONS · SCORE HIGH · SURVIVE THE HUNT<br>
-    YOU THROW REAL DARTS · ENTER RESULTS HERE
-  </div>
+  <div id="menu-hs" class="pnl" style="width:100%;max-width:420px;display:none"></div>
+  <div style="color:var(--dim);font-size:10px;letter-spacing:2px;line-height:1.9;max-width:460px">
+    THROW REAL DARTS · ENTER RESULTS · SURVIVE THE HUNT</div>
 </div>
 
-<!-- ═══════════════════════ STORY ═══════════════════════ -->
-<div id="screen-story" class="screen" style="align-items:center;justify-content:center;
-  gap:20px;text-align:center;padding:40px">
+<!-- ═══════════════════ STORY ═══════════════════ -->
+<div id="screen-story" class="screen" style="align-items:center;justify-content:center;text-align:center;padding:30px 16px;gap:16px">
   <div class="label danger" style="letter-spacing:4px">⚓ MISSION BRIEFING</div>
   <div class="story-box">
-    <span class="story-sentence">
-      The year is 2089, and the militarized cartel known as <span class="accent">KRAKEN INC.</span>
-      has seized the world's critical sea lanes using a vast experimental deep-sonar network.
-    </span>
-    <span class="story-sentence">
-      Your submarine — designation <span class="bright" style="color:var(--bright)">UBS TRITON-7</span>
-       — is the only vessel capable of operating undetected inside KRAKEN's exclusion zones.
-    </span>
-    <span class="story-sentence">
-      Command has assigned you a series of precision strike missions that, if successful,
-      will expose KRAKEN's command structure and liberate the blockaded free nations.
-    </span>
-    <span class="story-sentence">
-      KRAKEN's hunt drones will pursue any submarine that lingers — and each patrol
-      is smarter and more relentless than the last.
-    </span>
-    <span class="story-sentence" style="color:var(--accent)">
-      Complete your missions, outrun the hunters, and if cornered… fight.
-    </span>
+    <span class="story-sentence">The year is 2089, and the militarized cartel known as <span class="accent">KRAKEN INC.</span> has seized the world's critical sea lanes using a vast experimental deep-sonar network.</span>
+    <span class="story-sentence">Your submarine — designation <span style="color:var(--bright)">UBS TRITON-7</span> — is the only vessel capable of operating undetected inside KRAKEN's exclusion zones.</span>
+    <span class="story-sentence">Command has assigned you a series of precision strike missions that, if successful, will expose KRAKEN's command structure and liberate the blockaded free nations.</span>
+    <span class="story-sentence">KRAKEN's hunt drones pursue any submarine that lingers — and each patrol is smarter and more relentless than the last.</span>
+    <span class="story-sentence" style="color:var(--accent)">Complete your missions, outrun the hunters, and if cornered… fight.</span>
   </div>
-  <button class="btn-a" onclick="continueFromStory()"
-    style="font-size:14px;padding:10px 28px;margin-top:8px">▶ BEGIN DIVE</button>
+  <button class="btn-a" onclick="continueFromStory()" style="font-size:14px;padding:10px 28px">▶ BEGIN DIVE</button>
 </div>
 
-<!-- ═══════════════════════ MISSION ═══════════════════════ -->
+<!-- ═══════════════════ MISSION ═══════════════════ -->
 <div id="screen-mission" class="screen">
   <div class="mission-header">
     <div>
       <span class="label">MISSION&nbsp;</span><span class="val" id="m-num">01</span>
-      <span class="dim">&nbsp;/&nbsp;</span><span class="val accent" id="m-tier">TIER I</span>
+      <span class="dim">&nbsp;·&nbsp;</span><span class="val accent" id="m-tier">TIER I</span>
     </div>
     <div style="text-align:center">
-      <span class="label">DEPTH&nbsp;</span><span class="val" id="m-depth">0</span>
-      <span class="dim">&nbsp;m</span>
+      <span class="label" id="dp-title-m">ROUND 1 · DART 1</span>
     </div>
     <div style="text-align:right">
       <span class="label">XP&nbsp;</span><span class="val-lg" id="m-xp">0000</span>
     </div>
   </div>
   <div class="mission-body">
+    <!-- Left: goals + log -->
     <div class="mission-left">
       <div class="pnl">
-        <h3>OBJECTIVES</h3>
+        <h3>OBJECTIVES &nbsp;<span id="m-pot-xp" style="color:var(--gold);font-weight:normal;font-size:10px"></span></h3>
         <div id="goals-list"></div>
-        <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;
-          display:flex;justify-content:space-between">
-          <span class="label">POTENTIAL XP</span>
-          <span class="val" id="m-pot-xp" style="color:var(--gold)">+00</span>
-        </div>
       </div>
       <div class="pnl">
         <h3>DARTS LOG</h3>
         <div class="rounds-wrap" id="rounds-display"></div>
       </div>
       <div class="pnl" id="mission-summary" style="display:none">
-        <h3>MISSION RESULT</h3>
+        <h3>RESULT</h3>
         <div id="summary-content"></div>
         <div class="btn-row">
           <button class="btn-a" onclick="afterMission()">CONTINUE ▶</button>
         </div>
       </div>
     </div>
+    <!-- Right: canvas (desktop only) -->
     <div class="mission-right">
-      <div class="pnl" style="text-align:center">
+      <div class="pnl" style="text-align:center;width:100%">
         <h3 id="dart-prompt">ROUND 1 · DART 1</h3>
-        <canvas id="dartboard-canvas" width="370" height="370"></canvas>
-        <div class="board-hint">click dartboard · or use buttons below</div>
-        <div class="dart-ctrl">
-          <button class="btn-d" id="btn-miss"
-            onclick="throwDart({type:'miss',segment:null,score:0,label:'MISS'})">✕ MISS</button>
-          <button id="btn-undo" onclick="undoLastDart()">↩ UNDO</button>
-        </div>
+        <canvas id="dartboard-canvas" width="360" height="360"></canvas>
+        <div style="font-size:10px;color:var(--dim);margin-top:4px">click dartboard or use panel below</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════ SCORING ═══════════════════════ -->
+<!-- ═══════════════════ SCORING ═══════════════════ -->
 <div id="screen-scoring" class="screen">
-  <div style="text-align:center;padding:10px 0">
+  <div style="text-align:center">
     <h2>◈ SCORING ROUND ◈</h2>
-    <div class="dim" style="font-size:11px;letter-spacing:2px">
-      THROW 9 DARTS · SCORE AS HIGH AS POSSIBLE · ADDS TO XP</div>
+    <div class="dim" style="font-size:10px;letter-spacing:2px">9 DARTS · SCORE HIGH · ADDS TO XP</div>
   </div>
-  <div class="scoring-body" style="margin:0 auto">
+  <div class="scoring-body">
     <div class="scoring-left">
       <div class="pnl2">
-        <h3>DARTS</h3>
+        <h3>DARTS THROWN</h3>
         <div class="scoring-grid" id="scoring-grid"></div>
-        <div style="margin-top:12px;display:flex;justify-content:space-between;
-          align-items:center;border-top:1px solid var(--border);padding-top:8px">
-          <span class="label">SCORE</span><span class="val-lg" id="scoring-total">0</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-          <span class="label">XP GAIN</span>
-          <span class="val" style="color:var(--gold)" id="scoring-xp-gain">+0</span>
-        </div>
+        <div class="stat-row"><span class="label">SCORE</span><span class="val-lg" id="scoring-total">0</span></div>
+        <div class="stat-row"><span class="label">AVG / DART</span><span class="val" id="scoring-avg">—</span></div>
+        <div class="stat-row"><span class="label">XP GAIN</span><span class="val" style="color:var(--gold)" id="scoring-xp-gain">+0</span></div>
       </div>
-      <div class="pnl2" style="margin-top:8px">
-        <span class="label">CURRENT XP</span>
+      <div class="pnl2">
+        <span class="label">TOTAL XP</span>
         <div class="val-lg" id="scoring-cur-xp">0000</div>
       </div>
-      <div class="pnl2" style="display:none;margin-top:8px" id="scoring-done-panel">
+      <div class="pnl2" id="scoring-done-panel" style="display:none">
         <h3>ROUND COMPLETE</h3>
-        <div class="dim" style="font-size:11px;line-height:1.8" id="scoring-done-text"></div>
+        <div class="dim" style="font-size:11px;line-height:1.9" id="scoring-done-text"></div>
         <div class="btn-row"><button class="btn-a" onclick="afterScoring()">CONTINUE ▶</button></div>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-      <canvas id="dartboard-canvas-s" width="370" height="370" style="cursor:crosshair"></canvas>
-      <div class="dart-ctrl">
-        <button class="btn-d"
-          onclick="throwScoringDart({type:'miss',segment:null,score:0,label:'MISS'})">✕ MISS</button>
-        <button onclick="undoScoringDart()">↩ UNDO</button>
-      </div>
+    <!-- Canvas col — hidden on mobile via CSS -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <canvas id="dartboard-canvas-s" width="360" height="360"></canvas>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════ HUNT ═══════════════════════ -->
+<!-- ═══════════════════ HUNT ═══════════════════ -->
 <div id="screen-hunt" class="screen">
-  <div style="text-align:center;padding:12px 0">
-    <div class="label blink" style="color:var(--danger);font-size:11px;letter-spacing:4px">
-      ⚠ ENEMY CONTACT ⚠</div>
-    <h2 style="margin-top:6px;color:var(--danger)">HUNT SEQUENCE
-      <span id="hunt-num">01</span></h2>
+  <div style="text-align:center">
+    <div class="label blink" style="color:var(--danger);font-size:11px;letter-spacing:4px">⚠ ENEMY CONTACT ⚠</div>
+    <h2 style="margin-top:6px;color:var(--danger)">HUNT SEQUENCE <span id="hunt-num">01</span></h2>
   </div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:20px">
-    <canvas id="sonar-canvas" width="260" height="260"></canvas>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:16px">
+    <canvas id="sonar-canvas" width="240" height="240"></canvas>
     <div class="hunt-status" id="hunt-status"></div>
     <div class="hunt-bars" id="hunt-bars"></div>
     <div id="hunt-result" style="display:none;text-align:center">
-      <div style="font-size:22px;letter-spacing:4px;margin-bottom:12px"
-        id="hunt-result-text"></div>
+      <div style="font-size:clamp(16px,4vw,22px);letter-spacing:4px;margin-bottom:12px" id="hunt-result-text"></div>
       <button class="btn-a" id="hunt-continue-btn">CONTINUE ▶</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════ DUEL ═══════════════════════ -->
+<!-- ═══════════════════ DUEL ═══════════════════ -->
 <div id="screen-duel" class="screen">
   <div class="duel-header">
     <div>
-      <span class="label" style="color:var(--danger)">⚔ DUEL IN PROGRESS</span>
-      &nbsp;·&nbsp;<span class="label">HUNT <span id="duel-hunt-num">01</span></span>
+      <span class="label" style="color:var(--danger)">⚔ DUEL</span>
+      <span class="dim">&nbsp;#<span id="duel-enc-num">1</span></span>
     </div>
-    <div style="text-align:center;color:var(--danger);font-size:13px;letter-spacing:3px">
-      301 SHOOTOUT — SINGLE IN · SINGLE OUT</div>
+    <div style="color:var(--danger);font-size:11px;letter-spacing:2px">301 — SINGLE IN · SINGLE OUT</div>
     <div>
-      <span class="label">ENEMY AVG/DART&nbsp;</span>
-      <span class="val accent" id="duel-enemy-avg">25</span>
+      <span class="label">ENEMY AVG&nbsp;</span><span class="val accent" id="duel-enemy-avg">25</span>
     </div>
   </div>
   <div class="duel-body">
-    <!-- Left: scoreboards -->
+    <!-- Scores -->
     <div class="duel-left">
       <div class="pnl">
-        <h3>YOU (CAPTAIN)</h3>
+        <h3>YOU</h3>
         <div class="duel-score-big player-col" id="duel-player-score">301</div>
-        <div class="label" id="duel-player-change" style="min-height:16px"></div>
+        <div class="label" id="duel-player-avg-lbl" style="min-height:14px"></div>
         <div class="duel-dart-row" id="duel-player-chips"></div>
       </div>
       <div class="pnl">
         <h3 style="color:var(--danger)">ENEMY</h3>
         <div class="duel-score-big enemy-col" id="duel-enemy-score">301</div>
-        <div class="label" id="duel-enemy-change" style="min-height:16px"></div>
+        <div class="label" id="duel-enemy-avg-lbl" style="min-height:14px"></div>
         <div class="duel-dart-row" id="duel-enemy-chips"></div>
       </div>
-      <div class="pnl2" id="duel-msg-box">
-        <div class="duel-msg" id="duel-msg"></div>
-      </div>
+      <div class="pnl2"><div class="duel-msg" id="duel-msg"></div></div>
     </div>
-    <!-- Right: dartboard -->
+    <!-- Canvas col — desktop only -->
     <div class="duel-right">
       <div class="duel-turn-lbl" id="duel-turn-lbl">YOUR THROW · DART 1</div>
-      <canvas id="dartboard-canvas-d" width="340" height="340" style="cursor:crosshair"></canvas>
-      <div class="dart-ctrl" id="duel-controls">
-        <button class="btn-d"
-          onclick="duelPlayerDart({type:'miss',segment:null,score:0,label:'MISS'})">
-          ✕ MISS</button>
-        <button id="duel-undo-btn" onclick="duelUndo()">↩ UNDO</button>
-      </div>
+      <canvas id="dartboard-canvas-d" width="330" height="330"></canvas>
     </div>
   </div>
-  <!-- Result overlay -->
   <div class="duel-result-overlay" id="duel-result-overlay">
     <div class="duel-result-big" id="duel-result-text"></div>
     <button class="btn-a" id="duel-continue-btn" onclick="afterDuel()"
@@ -407,41 +394,39 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
   </div>
 </div>
 
-<!-- ═══════════════════════ GAME OVER ═══════════════════════ -->
+<!-- ═══════════════════ GAME OVER ═══════════════════ -->
 <div id="screen-gameover" class="screen">
-  <div style="text-align:center;padding:30px 20px;display:flex;flex-direction:column;
-    align-items:center;gap:16px">
-    <div class="danger" style="font-size:12px;letter-spacing:4px">◈ SUBMARINE DESTROYED ◈</div>
+  <div style="text-align:center;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:14px">
+    <div class="danger" style="font-size:11px;letter-spacing:4px">◈ SUBMARINE DESTROYED ◈</div>
     <h1 style="color:var(--danger)">GAME OVER</h1>
     <div class="score-box">
       <div class="label">FINAL SCORE</div>
-      <div class="val-lg" id="go-xp" style="font-size:32px">0000</div>
-      <div style="margin-top:10px;display:flex;gap:30px;justify-content:center">
+      <div class="val-lg" id="go-xp" style="font-size:30px">0000</div>
+      <div style="margin-top:10px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
         <div><div class="label">MISSIONS</div><div class="val" id="go-missions">0</div></div>
-        <div><div class="label">GOALS DONE</div><div class="val" id="go-goals">0</div></div>
-        <div><div class="label">HUNTS SURVIVED</div><div class="val" id="go-hunts">0</div></div>
+        <div><div class="label">GOALS</div><div class="val" id="go-goals">0</div></div>
+        <div><div class="label">HUNTS</div><div class="val" id="go-hunts">0</div></div>
+        <div><div class="label">DUELS</div><div class="val" id="go-duels">0</div></div>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-      <div class="label">ENTER YOUR NAME</div>
-      <input type="text" id="input-name" maxlength="10" placeholder="CAPTAIN" autocomplete="off">
-      <button class="btn-s" onclick="submitScore()">⊞ SAVE TO LEADERBOARD</button>
-    </div>
+    <input type="text" id="input-name" maxlength="10" placeholder="CAPTAIN" autocomplete="off">
+    <button class="btn-s" onclick="submitScore()">⊞ SAVE SCORE</button>
     <div class="btn-row" style="justify-content:center">
       <button class="btn-a" onclick="startGame()">▶ PLAY AGAIN</button>
-      <button onclick="showScreen('highscores')">⊞ HIGH SCORES</button>
+      <button onclick="showScreen('highscores')">⊞ SCORES</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════ HIGHSCORES ═══════════════════════ -->
+<!-- ═══════════════════ HIGHSCORES ═══════════════════ -->
 <div id="screen-highscores" class="screen">
-  <div style="text-align:center;padding:16px 0"><h2>⊞ HIGH SCORES</h2></div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:20px">
-    <table class="hs-table" id="hs-table">
+  <div style="text-align:center;padding:12px 0"><h2>⊞ HIGH SCORES</h2></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:16px">
+    <table class="hs-table">
       <thead><tr>
         <th>#</th><th>CAPTAIN</th><th>XP</th>
-        <th>MISSIONS</th><th>GOALS</th><th>HUNTS</th>
+        <th class="hide-mobile">MISSIONS</th><th class="hide-mobile">GOALS</th>
+        <th>HUNTS</th><th class="hide-mobile">DUELS</th>
       </tr></thead>
       <tbody id="hs-body"></tbody>
     </table>
@@ -453,6 +438,31 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
 </div>
 
 </div><!-- #app -->
+
+<!-- ════════════════════════════════════════════
+     FIXED BOTTOM DART INPUT PANEL
+════════════════════════════════════════════ -->
+<div id="dart-panel">
+  <div id="dp-title">THROW DART</div>
+  <div class="dp-mult-row">
+    <button id="mb1" class="active-mult" onclick="setMult(1)">SINGLE</button>
+    <button id="mb2" onclick="setMult(2)">DOUBLE</button>
+    <button id="mb3" onclick="setMult(3)">TRIPLE</button>
+  </div>
+  <div class="dp-num-grid" id="dp-num-grid">
+    <!-- filled by JS -->
+  </div>
+  <div class="dp-special-row">
+    <button onclick="commitSpecial('bull')">BULL&nbsp;<small style="color:var(--dim)">25</small></button>
+    <button onclick="commitSpecial('bullseye')">BULL'S EYE&nbsp;<small style="color:var(--dim)">50</small></button>
+    <button class="btn-d" onclick="commitSpecial('miss')">✕ MISS</button>
+  </div>
+  <div class="dp-bot-row">
+    <button onclick="doUndo()" id="dp-undo">↩ UNDO</button>
+    <button onclick="hideDartPanel()" id="dp-close" style="display:none">✕ CLOSE</button>
+  </div>
+</div>
+
 <script>
 'use strict';
 // ═══════════════════════════════════════════════════════════
@@ -460,358 +470,283 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
 // ═══════════════════════════════════════════════════════════
 const BOARD_NUMS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
 const NUMS_1_20  = Array.from({length:20},(_,i)=>i+1);
-
-const BR = {
-  bullseye:.063, bull:.158,
-  tripleIn:.630, tripleOut:.681,
-  doubleIn:.900, doubleOut:.950
-};
+const BR = {bullseye:.063,bull:.158,tripleIn:.630,tripleOut:.681,doubleIn:.900,doubleOut:.950};
 
 const GOAL_XP = {
-  avoid_segments:5, score_greater:7, hit_segments:10, same_seg_9:8,
-  score_lesser:12, same_seg_round:13, hit_any_double:15,
-  hit_any_triple:20, hit_specific_double:20, hit_specific_triple:30,
-  hit_bull:25,
-  more_evens:5, more_odds:5,
-  round_only_odd:5, round_only_even:5,
-  increasing_round:11, decreasing_round:12
+  avoid_segments:5,score_greater:7,hit_segments:10,same_seg_9:8,
+  score_lesser:12,same_seg_round:13,hit_any_double:15,
+  hit_any_triple:20,hit_specific_double:20,hit_specific_triple:30,hit_bull:25,
+  more_evens:5,more_odds:5,round_only_odd:5,round_only_even:5,
+  increasing_round:11,decreasing_round:12
 };
-
-// Score-greater thresholds by tier (lo, hi)
-const SCORE_GT_RANGE = {1:[18,38], 2:[35,65], 3:[60,90], 4:[80,120]};
-// Score-lesser thresholds by tier
-const SCORE_LT_RANGE = {2:[32,52], 3:[24,42], 4:[16,34]};
-
-const TIER_GOALS = {
-  1: ['avoid_segments','score_greater','hit_segments','same_seg_9',
-      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round'],
-  2: ['avoid_segments','score_greater','hit_segments','same_seg_9',
-      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
-      'score_lesser','same_seg_round','hit_any_double','decreasing_round'],
-  3: ['avoid_segments','score_greater','hit_segments','same_seg_9',
-      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
-      'score_lesser','same_seg_round','hit_any_double','decreasing_round',
-      'hit_any_triple','hit_specific_double','hit_bull'],
-  4: ['avoid_segments','score_greater','hit_segments','same_seg_9',
-      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
-      'score_lesser','same_seg_round','hit_any_double','decreasing_round',
-      'hit_any_triple','hit_specific_double','hit_bull','hit_specific_triple']
+const SCORE_GT_RANGE={1:[18,38],2:[35,65],3:[60,90],4:[80,120]};
+const SCORE_LT_RANGE={2:[32,52],3:[24,42],4:[16,34]};
+const TIER_GOALS={
+  1:['avoid_segments','score_greater','hit_segments','same_seg_9',
+     'more_evens','more_odds','round_only_odd','round_only_even','increasing_round'],
+  2:['avoid_segments','score_greater','hit_segments','same_seg_9',
+     'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
+     'score_lesser','same_seg_round','hit_any_double','decreasing_round'],
+  3:['avoid_segments','score_greater','hit_segments','same_seg_9',
+     'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
+     'score_lesser','same_seg_round','hit_any_double','decreasing_round',
+     'hit_any_triple','hit_specific_double','hit_bull'],
+  4:['avoid_segments','score_greater','hit_segments','same_seg_9',
+     'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
+     'score_lesser','same_seg_round','hit_any_double','decreasing_round',
+     'hit_any_triple','hit_specific_double','hit_bull','hit_specific_triple']
 };
-const TIER_RANGES = {1:[20,30], 2:[30,40], 3:[40,50], 4:[50,90]};
-const TIER_NAMES  = {1:'TIER I',2:'TIER II',3:'TIER III',4:'TIER IV'};
+const TIER_RANGES={1:[20,30],2:[30,40],3:[40,50],4:[50,90]};
+const TIER_NAMES={1:'TIER I',2:'TIER II',3:'TIER III',4:'TIER IV'};
 
 // ═══════════════════════════════════════════════════════════
-// GAME STATE
+// STATE
 // ═══════════════════════════════════════════════════════════
-let G = {};
-function initState() {
-  G = {
-    missionNum:1, xp:0, completedGoals:0,
-    missionsCompleted:0, huntsCompleted:0, huntNum:1,
-    mission:null, allDarts:[], rounds:[[],[],[]], roundIdx:0, dartIdx:0,
-    scoreDarts:[], lastScoreXP:0,
-    huntThreshold:0, newScoreIndex:-1,
+let G={};
+function initState(){
+  G={
+    missionNum:1,xp:0,completedGoals:0,missionsCompleted:0,
+    huntsCompleted:0,huntNum:1,duelCount:0, // duelCount: how many duels fought
+    mission:null,allDarts:[],rounds:[[],[],[]],roundIdx:0,dartIdx:0,
+    scoreDarts:[],huntThreshold:0,newScoreIndex:-1,
   };
 }
 
 // ═══════════════════════════════════════════════════════════
-// UTILITY
+// UTIL
 // ═══════════════════════════════════════════════════════════
-const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
-const pick = a => a[Math.floor(Math.random()*a.length)];
-const pad  = (n,w=4) => String(n).padStart(w,'0');
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const pad=(n,w=4)=>String(n).padStart(w,'0');
 function pickN(arr,n){
   const a=[...arr],r=[];
   for(let i=0;i<n;i++){const j=Math.floor(Math.random()*(a.length-i));r.push(a[j]);a[j]=a[a.length-1-i];}
   return r.slice(0,n);
 }
+function avg1dp(total,count){return count?+(total/count).toFixed(1):0;}
+
+// ═══════════════════════════════════════════════════════════
+// DART INPUT PANEL
+// ═══════════════════════════════════════════════════════════
+let currentMult=1;
+let dartInputCb=null;
+let undoCb=null;
+
+(function buildNumGrid(){
+  const g=document.getElementById('dp-num-grid');
+  for(let n=1;n<=20;n++){
+    const b=document.createElement('button');
+    b.textContent=n;
+    b.onclick=()=>commitNumber(n);
+    g.appendChild(b);
+  }
+})();
+
+function setMult(m){
+  currentMult=m;
+  [1,2,3].forEach(i=>document.getElementById('mb'+i).classList.toggle('active-mult',i===m));
+}
+
+function commitNumber(n){
+  if(!dartInputCb)return;
+  const type=currentMult===1?'single':currentMult===2?'double':'triple';
+  const label=currentMult===1?`${n}`:currentMult===2?`D${n}`:`T${n}`;
+  dartInputCb({type,segment:n,score:n*currentMult,label});
+  setMult(1);
+}
+
+function commitSpecial(what){
+  if(!dartInputCb)return;
+  const map={
+    bull:{type:'bull',segment:null,score:25,label:'BULL'},
+    bullseye:{type:'bullseye',segment:null,score:50,label:"BULL'S EYE"},
+    miss:{type:'miss',segment:null,score:0,label:'MISS'}
+  };
+  dartInputCb(map[what]);
+  setMult(1);
+}
+
+function doUndo(){if(undoCb)undoCb();}
+
+function activateInput(title,cb,undo){
+  dartInputCb=cb;undoCb=undo||null;currentMult=1;
+  setMult(1);
+  document.getElementById('dp-title').textContent=title||'THROW DART';
+  document.getElementById('dart-panel').classList.add('visible');
+}
+
+function hideDartPanel(){
+  dartInputCb=null;undoCb=null;
+  document.getElementById('dart-panel').classList.remove('visible');
+}
 
 // ═══════════════════════════════════════════════════════════
 // GOAL SYSTEM
 // ═══════════════════════════════════════════════════════════
-function createGoal(type, tier=1) {
+function createGoal(type,tier=1){
   switch(type){
-    case 'avoid_segments':{
-      const s=pickN(NUMS_1_20,3);
-      return {type,segments:s,xp:5,desc:`Avoid segments ${s.join(', ')}`};
-    }
-    case 'score_greater':{
-      const [lo,hi]=SCORE_GT_RANGE[tier]||SCORE_GT_RANGE[4];
-      const t=rnd(lo,hi);
-      return {type,threshold:t,xp:7,desc:`Score >${t} in one round`};
-    }
-    case 'hit_segments':{
-      const s=pickN(NUMS_1_20,3);
-      return {type,segments:s,xp:10,desc:`Hit segments ${s.join(', ')}`};
-    }
-    case 'same_seg_9':
-      return {type,xp:8,desc:'Hit same segment ×3 in 9 darts'};
-    case 'score_lesser':{
-      const [lo,hi]=SCORE_LT_RANGE[tier]||SCORE_LT_RANGE[4];
-      const t=rnd(lo,hi);
-      return {type,threshold:t,xp:12,desc:`Score <${t} in one round (no misses!)`};
-    }
-    case 'same_seg_round':
-      return {type,xp:13,desc:'Hit same segment ×3 in one round'};
-    case 'hit_any_double':
-      return {type,xp:15,desc:'Hit any double'};
-    case 'hit_any_triple':
-      return {type,xp:20,desc:'Hit any triple'};
-    case 'hit_specific_double':{
-      const s=pick(NUMS_1_20);
-      return {type,segment:s,xp:20,desc:`Hit D${s} (double ${s})`};
-    }
-    case 'hit_specific_triple':{
-      const s=pick(NUMS_1_20);
-      return {type,segment:s,xp:30,desc:`Hit T${s} (triple ${s})`};
-    }
-    case 'hit_bull':
-      return {type,xp:25,desc:"Hit BULL or BULL'S EYE"};
-    case 'more_evens':
-      return {type,xp:5,desc:'Hit more even than odd segments'};
-    case 'more_odds':
-      return {type,xp:5,desc:'Hit more odd than even segments'};
-    case 'round_only_odd':
-      return {type,xp:5,desc:'Hit only odd segments in one round'};
-    case 'round_only_even':
-      return {type,xp:5,desc:'Hit only even segments in one round'};
-    case 'increasing_round':
-      return {type,xp:11,desc:'Hit strictly increasing scores in one round'};
-    case 'decreasing_round':
-      return {type,xp:12,desc:'Hit strictly decreasing scores in one round'};
+    case 'avoid_segments':{const s=pickN(NUMS_1_20,3);return{type,segments:s,xp:5,desc:`Avoid segments ${s.join(', ')}`};}
+    case 'score_greater':{const[lo,hi]=SCORE_GT_RANGE[tier]||SCORE_GT_RANGE[4];const t=rnd(lo,hi);return{type,threshold:t,xp:7,desc:`Score >${t} in one round`};}
+    case 'hit_segments':{const s=pickN(NUMS_1_20,3);return{type,segments:s,xp:10,desc:`Hit segments ${s.join(', ')}`};}
+    case 'same_seg_9':return{type,xp:8,desc:'Hit same segment ×3 in 9 darts'};
+    case 'score_lesser':{const[lo,hi]=SCORE_LT_RANGE[tier]||SCORE_LT_RANGE[4];const t=rnd(lo,hi);return{type,threshold:t,xp:12,desc:`Score <${t} in one round (no misses!)`};}
+    case 'same_seg_round':return{type,xp:13,desc:'Hit same segment ×3 in one round'};
+    case 'hit_any_double':return{type,xp:15,desc:'Hit any double'};
+    case 'hit_any_triple':return{type,xp:20,desc:'Hit any triple'};
+    case 'hit_specific_double':{const s=pick(NUMS_1_20);return{type,segment:s,xp:20,desc:`Hit D${s}`};}
+    case 'hit_specific_triple':{const s=pick(NUMS_1_20);return{type,segment:s,xp:30,desc:`Hit T${s}`};}
+    case 'hit_bull':return{type,xp:25,desc:"Hit BULL or BULL'S EYE"};
+    case 'more_evens':return{type,xp:5,desc:'Hit more even than odd segments (9 darts)'};
+    case 'more_odds':return{type,xp:5,desc:'Hit more odd than even segments (9 darts)'};
+    case 'round_only_odd':return{type,xp:5,desc:'Hit only odd-numbered segments in one round'};
+    case 'round_only_even':return{type,xp:5,desc:'Hit only even-numbered segments in one round'};
+    case 'increasing_round':return{type,xp:11,desc:'Hit strictly increasing scores in one round'};
+    case 'decreasing_round':return{type,xp:12,desc:'Hit strictly decreasing scores in one round'};
   }
 }
 
 function goalsIdentical(a,b){
   if(a.type!==b.type)return false;
   switch(a.type){
-    case 'avoid_segments':case 'hit_segments':
-      return [...a.segments].sort().join()===[...b.segments].sort().join();
-    case 'score_greater':case 'score_lesser':
-      return a.threshold===b.threshold;
-    case 'hit_specific_double':case 'hit_specific_triple':
-      return a.segment===b.segment;
+    case 'avoid_segments':case 'hit_segments':return[...a.segments].sort().join()===[...b.segments].sort().join();
+    case 'score_greater':case 'score_lesser':return a.threshold===b.threshold;
+    case 'hit_specific_double':case 'hit_specific_triple':return a.segment===b.segment;
     default:return true;
   }
 }
 
 function evalGoal(goal,allDarts,rounds){
   switch(goal.type){
-    case 'avoid_segments':
-      return !allDarts.some(d=>d.segment!==null&&goal.segments.includes(d.segment));
-    case 'score_greater':
-      return rounds.some(r=>r.reduce((s,d)=>s+d.score,0)>goal.threshold);
-    case 'hit_segments':
-      return goal.segments.every(s=>allDarts.some(d=>d.segment===s));
-    case 'same_seg_9':{
-      const cnt={};
-      allDarts.forEach(d=>{if(d.segment!==null)cnt[d.segment]=(cnt[d.segment]||0)+1;});
-      return Object.values(cnt).some(c=>c>=3);
-    }
-    case 'score_lesser':
-      return rounds.some(r=>
-        !r.some(d=>d.type==='miss')&&r.reduce((s,d)=>s+d.score,0)<goal.threshold);
-    case 'same_seg_round':
-      return rounds.some(r=>r.length===3&&r[0].segment!==null&&
-        r[0].segment===r[1].segment&&r[1].segment===r[2].segment);
-    case 'hit_any_double':
-      return allDarts.some(d=>d.type==='double');
-    case 'hit_any_triple':
-      return allDarts.some(d=>d.type==='triple');
-    case 'hit_specific_double':
-      return allDarts.some(d=>d.type==='double'&&d.segment===goal.segment);
-    case 'hit_specific_triple':
-      return allDarts.some(d=>d.type==='triple'&&d.segment===goal.segment);
-    case 'hit_bull':
-      return allDarts.some(d=>d.type==='bull'||d.type==='bullseye');
-    case 'more_evens':{
-      const ev=allDarts.filter(d=>d.segment!==null&&d.segment%2===0).length;
-      const od=allDarts.filter(d=>d.segment!==null&&d.segment%2===1).length;
-      return ev>od;
-    }
-    case 'more_odds':{
-      const ev=allDarts.filter(d=>d.segment!==null&&d.segment%2===0).length;
-      const od=allDarts.filter(d=>d.segment!==null&&d.segment%2===1).length;
-      return od>ev;
-    }
-    case 'round_only_odd':
-      return rounds.some(r=>r.length===3&&
-        r.every(d=>d.segment!==null&&d.segment%2===1));
-    case 'round_only_even':
-      return rounds.some(r=>r.length===3&&
-        r.every(d=>d.segment!==null&&d.segment%2===0));
-    case 'increasing_round':
-      return rounds.some(r=>r.length===3&&
-        r[0].score<r[1].score&&r[1].score<r[2].score);
-    case 'decreasing_round':
-      return rounds.some(r=>r.length===3&&
-        r[0].score>r[1].score&&r[1].score>r[2].score);
+    case 'avoid_segments':return!allDarts.some(d=>d.segment!==null&&goal.segments.includes(d.segment));
+    case 'score_greater':return rounds.some(r=>r.reduce((s,d)=>s+d.score,0)>goal.threshold);
+    case 'hit_segments':return goal.segments.every(s=>allDarts.some(d=>d.segment===s));
+    case 'same_seg_9':{const c={};allDarts.forEach(d=>{if(d.segment!==null)c[d.segment]=(c[d.segment]||0)+1;});return Object.values(c).some(v=>v>=3);}
+    case 'score_lesser':return rounds.some(r=>!r.some(d=>d.type==='miss')&&r.reduce((s,d)=>s+d.score,0)<goal.threshold);
+    case 'same_seg_round':return rounds.some(r=>r.length===3&&r[0].segment!==null&&r[0].segment===r[1].segment&&r[1].segment===r[2].segment);
+    case 'hit_any_double':return allDarts.some(d=>d.type==='double');
+    case 'hit_any_triple':return allDarts.some(d=>d.type==='triple');
+    case 'hit_specific_double':return allDarts.some(d=>d.type==='double'&&d.segment===goal.segment);
+    case 'hit_specific_triple':return allDarts.some(d=>d.type==='triple'&&d.segment===goal.segment);
+    case 'hit_bull':return allDarts.some(d=>d.type==='bull'||d.type==='bullseye');
+    case 'more_evens':{const ev=allDarts.filter(d=>d.segment!==null&&d.segment%2===0).length,od=allDarts.filter(d=>d.segment!==null&&d.segment%2===1).length;return ev>od;}
+    case 'more_odds':{const ev=allDarts.filter(d=>d.segment!==null&&d.segment%2===0).length,od=allDarts.filter(d=>d.segment!==null&&d.segment%2===1).length;return od>ev;}
+    case 'round_only_odd':return rounds.some(r=>r.length===3&&r.every(d=>d.segment!==null&&d.segment%2===1));
+    case 'round_only_even':return rounds.some(r=>r.length===3&&r.every(d=>d.segment!==null&&d.segment%2===0));
+    case 'increasing_round':return rounds.some(r=>r.length===3&&r[0].score<r[1].score&&r[1].score<r[2].score);
+    case 'decreasing_round':return rounds.some(r=>r.length===3&&r[0].score>r[1].score&&r[1].score>r[2].score);
   }
   return false;
 }
 
-// ═══════════════════════════════════════════════════════════
-// MISSION GENERATOR
-// ═══════════════════════════════════════════════════════════
-function getMissionTier(n){
-  if(n<=2)return 1; if(n<=6)return 2; if(n<=12)return 3; return 4;
-}
+function getMissionTier(n){if(n<=2)return 1;if(n<=6)return 2;if(n<=12)return 3;return 4;}
 
-function generateMission(missionNum){
-  const tier=getMissionTier(missionNum);
-  const [minXP,maxXP]=TIER_RANGES[tier];
+function generateMission(num){
+  const tier=getMissionTier(num);
+  const[minXP,maxXP]=TIER_RANGES[tier];
   const types=TIER_GOALS[tier];
-  for(let attempt=0;attempt<300;attempt++){
+  for(let a=0;a<300;a++){
     const goals=[];
     for(let i=0;i<3;i++){
-      let g,tries=0;
-      do{g=createGoal(pick(types),tier);tries++;}
-      while(tries<20&&goals.some(ex=>goalsIdentical(ex,g)));
+      let g,t=0;do{g=createGoal(pick(types),tier);t++;}while(t<20&&goals.some(e=>goalsIdentical(e,g)));
       goals.push(g);
     }
     const total=goals.reduce((s,g)=>s+g.xp,0);
     if(total>=minXP&&total<=maxXP)return{tier,goals};
   }
-  return{tier,goals:createFallbackGoals(tier)};
+  return{tier,goals:fallbackGoals(tier)};
 }
 
-function createFallbackGoals(tier){
+function fallbackGoals(tier){
   const combos={
-    1:[['avoid_segments','round_only_odd','hit_segments'],     // 5+5+10=20
-       ['more_evens','increasing_round','hit_segments']],       // 5+11+10=26
-    2:[['hit_any_double','hit_segments','score_greater'],       // 15+10+7=32
-       ['same_seg_round','hit_segments','round_only_even']],    // 13+10+5=28→add more
-    3:[['hit_any_triple','hit_any_double','hit_segments'],      // 20+15+10=45
-       ['hit_specific_double','decreasing_round','hit_any_double']],// 20+12+15=47
-    4:[['hit_specific_triple','hit_any_triple','hit_any_double'], // 30+20+15=65
-       ['hit_specific_triple','hit_specific_double','hit_any_triple']], // 30+20+20=70
+    1:[['avoid_segments','round_only_odd','hit_segments'],
+       ['more_evens','increasing_round','hit_segments']],
+    2:[['hit_any_double','hit_segments','score_greater'],
+       ['same_seg_round','decreasing_round','hit_segments']],
+    3:[['hit_any_triple','hit_any_double','hit_segments'],
+       ['hit_specific_double','decreasing_round','hit_any_double']],
+    4:[['hit_specific_triple','hit_any_triple','hit_any_double'],
+       ['hit_specific_triple','hit_specific_double','hit_any_triple']],
   };
-  const types=pick(combos[tier]);
-  const used=[];
-  return types.map(t=>{
-    let g,tries=0;
-    do{g=createGoal(t,tier);tries++;}
-    while(tries<20&&used.some(u=>goalsIdentical(u,g)));
-    used.push(g);return g;
-  });
+  const types=pick(combos[tier]);const used=[];
+  return types.map(t=>{let g,tries=0;do{g=createGoal(t,tier);tries++;}while(tries<20&&used.some(u=>goalsIdentical(u,g)));used.push(g);return g;});
 }
 
 // ═══════════════════════════════════════════════════════════
 // DARTBOARD
 // ═══════════════════════════════════════════════════════════
-function drawBoard(canvas, dartHits){
+function drawBoard(canvas,hits){
   const ctx=canvas.getContext('2d');
   const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2;
-  const R=Math.min(W,H)/2-14;
+  const R=Math.min(W,H)/2-12;
   ctx.clearRect(0,0,W,H);
-  const r=f=>R*f, ang=deg=>deg*Math.PI/180;
-
-  ctx.fillStyle='#111';
-  ctx.beginPath();ctx.arc(cx,cy,R+12,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#1a1a1a';
-  ctx.beginPath();ctx.arc(cx,cy,R+10,0,Math.PI*2);ctx.fill();
-
+  const r=f=>R*f,ang=deg=>deg*Math.PI/180;
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(cx,cy,R+10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a1a1a';ctx.beginPath();ctx.arc(cx,cy,R+8,0,Math.PI*2);ctx.fill();
   for(let i=0;i<20;i++){
     const sa=ang(i*18-99),ea=ang(i*18-81),even=i%2===0;
-    // inner single
-    ctx.fillStyle=even?'#e8d4a0':'#1e1e1e';
-    arcRing(ctx,cx,cy,r(BR.bull),r(BR.tripleIn),sa,ea);
-    // triple
-    ctx.fillStyle=even?'#1a5c2a':'#8b1a1a';
-    arcRing(ctx,cx,cy,r(BR.tripleIn),r(BR.tripleOut),sa,ea);
-    // outer single
-    ctx.fillStyle=even?'#e8d4a0':'#1e1e1e';
-    arcRing(ctx,cx,cy,r(BR.tripleOut),r(BR.doubleIn),sa,ea);
-    // double
-    ctx.fillStyle=even?'#1a5c2a':'#8b1a1a';
-    arcRing(ctx,cx,cy,r(BR.doubleIn),r(BR.doubleOut),sa,ea);
+    const paint=(r1,r2,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(cx,cy,r2,sa,ea);ctx.arc(cx,cy,r1,ea,sa,true);ctx.closePath();ctx.fill();};
+    paint(r(BR.bull),r(BR.tripleIn),even?'#e8d4a0':'#1e1e1e');
+    paint(r(BR.tripleIn),r(BR.tripleOut),even?'#1a5c2a':'#8b1a1a');
+    paint(r(BR.tripleOut),r(BR.doubleIn),even?'#e8d4a0':'#1e1e1e');
+    paint(r(BR.doubleIn),r(BR.doubleOut),even?'#1a5c2a':'#8b1a1a');
   }
-  ctx.fillStyle='#1a6030';
-  ctx.beginPath();ctx.arc(cx,cy,r(BR.bull),0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#a01818';
-  ctx.beginPath();ctx.arc(cx,cy,r(BR.bullseye),0,Math.PI*2);ctx.fill();
-
+  ctx.fillStyle='#1a6030';ctx.beginPath();ctx.arc(cx,cy,r(BR.bull),0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#a01818';ctx.beginPath();ctx.arc(cx,cy,r(BR.bullseye),0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='#000';ctx.lineWidth=1.5;
-  for(let i=0;i<20;i++){
-    const a=ang(i*18-90);
-    ctx.beginPath();
-    ctx.moveTo(cx+r(BR.bull)*Math.cos(a),cy+r(BR.bull)*Math.sin(a));
-    ctx.lineTo(cx+r(BR.doubleOut)*Math.cos(a),cy+r(BR.doubleOut)*Math.sin(a));
-    ctx.stroke();
-  }
+  for(let i=0;i<20;i++){const a=ang(i*18-90);ctx.beginPath();ctx.moveTo(cx+r(BR.bull)*Math.cos(a),cy+r(BR.bull)*Math.sin(a));ctx.lineTo(cx+r(BR.doubleOut)*Math.cos(a),cy+r(BR.doubleOut)*Math.sin(a));ctx.stroke();}
   ctx.lineWidth=1;
-  [BR.bull,BR.tripleIn,BR.tripleOut,BR.doubleIn,BR.doubleOut].forEach(f=>{
-    ctx.beginPath();ctx.arc(cx,cy,r(f),0,Math.PI*2);ctx.stroke();
-  });
+  [BR.bull,BR.tripleIn,BR.tripleOut,BR.doubleIn,BR.doubleOut].forEach(f=>{ctx.beginPath();ctx.arc(cx,cy,r(f),0,Math.PI*2);ctx.stroke();});
   ctx.beginPath();ctx.arc(cx,cy,r(BR.bullseye),0,Math.PI*2);ctx.stroke();
-
-  ctx.fillStyle='#fff';
-  ctx.font=`bold ${Math.round(R*.09)}px Arial`;
+  ctx.fillStyle='#fff';ctx.font=`bold ${Math.round(R*.085)}px Arial`;
   ctx.textAlign='center';ctx.textBaseline='middle';
-  for(let i=0;i<20;i++){
-    const a=ang(i*18-90),nr=(r(BR.doubleOut)+R+10)/2;
-    ctx.fillText(BOARD_NUMS[i],cx+nr*Math.cos(a),cy+nr*Math.sin(a));
-  }
-
-  // Draw dart marks
-  if(dartHits&&dartHits.length){
-    dartHits.forEach((d,idx)=>{
+  for(let i=0;i<20;i++){const a=ang(i*18-90),nr=(r(BR.doubleOut)+R+8)/2;ctx.fillText(BOARD_NUMS[i],cx+nr*Math.cos(a),cy+nr*Math.sin(a));}
+  if(hits&&hits.length){
+    hits.forEach((d,idx)=>{
       if(!d||d.canvasX===undefined)return;
-      const isLast=idx===dartHits.length-1;
-      ctx.beginPath();ctx.arc(d.canvasX,d.canvasY,isLast?7:5,0,Math.PI*2);
+      const last=idx===hits.length-1;
+      ctx.beginPath();ctx.arc(d.canvasX,d.canvasY,last?7:5,0,Math.PI*2);
       ctx.fillStyle=d.type==='triple'?'#f0c040':d.type==='double'?'#30e870':
         (d.type==='bullseye'||d.type==='bull')?'#ff6030':'#60c8ff';
-      ctx.fill();
-      ctx.strokeStyle=isLast?'#fff':'rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fill();ctx.strokeStyle=last?'#fff':'rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.stroke();
     });
   }
-}
-
-function arcRing(ctx,cx,cy,r1,r2,a1,a2){
-  ctx.beginPath();ctx.arc(cx,cy,r2,a1,a2);ctx.arc(cx,cy,r1,a2,a1,true);
-  ctx.closePath();ctx.fill();
 }
 
 function getHitFromClick(e,canvas){
   const rect=canvas.getBoundingClientRect();
   const scX=canvas.width/rect.width,scY=canvas.height/rect.height;
-  const cx=canvas.width/2,cy=canvas.height/2;
-  const R=Math.min(canvas.width,canvas.height)/2-14;
+  const cx=canvas.width/2,cy=canvas.height/2,R=Math.min(canvas.width,canvas.height)/2-12;
   const px=(e.clientX-rect.left)*scX,py=(e.clientY-rect.top)*scY;
-  const dx=px-cx,dy=py-cy;
-  const dist=Math.sqrt(dx*dx+dy*dy),frac=dist/R;
-  if(frac>BR.doubleOut+.06)return null;
+  const dx=px-cx,dy=py-cy,dist=Math.sqrt(dx*dx+dy*dy),frac=dist/R;
+  if(frac>BR.doubleOut+.07)return null;
   const base={canvasX:px,canvasY:py};
   if(frac<=BR.bullseye)return{...base,type:'bullseye',segment:null,score:50,label:"BULL'S EYE"};
-  if(frac<=BR.bull)   return{...base,type:'bull',segment:null,score:25,label:'BULL'};
+  if(frac<=BR.bull)return{...base,type:'bull',segment:null,score:25,label:'BULL'};
   const deg=((Math.atan2(dy,dx)*180/Math.PI)+90+360)%360;
-  const idx=Math.floor(((deg+9)%360)/18);
-  const seg=BOARD_NUMS[idx];
-  if(frac>BR.doubleOut) return{...base,type:'miss',segment:null,score:0,label:'MISS'};
-  if(frac>=BR.doubleIn) return{...base,type:'double',segment:seg,score:seg*2,label:`D${seg}`};
+  const idx=Math.floor(((deg+9)%360)/18),seg=BOARD_NUMS[idx];
+  if(frac>BR.doubleOut)return{...base,type:'miss',segment:null,score:0,label:'MISS'};
+  if(frac>=BR.doubleIn)return{...base,type:'double',segment:seg,score:seg*2,label:`D${seg}`};
   if(frac>=BR.tripleOut)return{...base,type:'single',segment:seg,score:seg,label:`${seg}`};
-  if(frac>=BR.tripleIn) return{...base,type:'triple',segment:seg,score:seg*3,label:`T${seg}`};
+  if(frac>=BR.tripleIn)return{...base,type:'triple',segment:seg,score:seg*3,label:`T${seg}`};
   return{...base,type:'single',segment:seg,score:seg,label:`${seg}`};
 }
 
-function setupBoard(id,callback){
-  const old=document.getElementById(id);
-  if(!old)return;
-  const neo=old.cloneNode(true);
-  old.parentNode.replaceChild(neo,old);
+function setupBoard(id,cb){
+  const old=document.getElementById(id);if(!old)return;
+  const neo=old.cloneNode(true);old.parentNode.replaceChild(neo,old);
   drawBoard(neo,[]);
-  neo.addEventListener('click',e=>{const h=getHitFromClick(e,neo);if(h)callback(h);});
+  neo.addEventListener('click',e=>{const h=getHitFromClick(e,neo);if(h&&dartInputCb)dartInputCb(h);});
 }
 
 // ═══════════════════════════════════════════════════════════
-// SCREEN MANAGEMENT
+// SCREENS
 // ═══════════════════════════════════════════════════════════
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const el=document.getElementById(`screen-${name}`);
-  if(el)el.classList.add('active');
+  const el=document.getElementById(`screen-${name}`);if(el)el.classList.add('active');
   if(name==='highscores')renderHighscores();
-  if(name==='menu')renderMenuHs();
+  if(name==='menu'){hideDartPanel();renderMenuHs();}
+  if(!['mission','scoring','duel'].includes(name))hideDartPanel();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -822,72 +757,58 @@ function continueFromStory(){beginMission();}
 
 function beginMission(){
   const{goals,tier}=generateMission(G.missionNum);
-  G.mission={goals,tier};
-  G.allDarts=[];G.rounds=[[],[],[]];G.roundIdx=0;G.dartIdx=0;
+  G.mission={goals,tier};G.allDarts=[];G.rounds=[[],[],[]];G.roundIdx=0;G.dartIdx=0;
   showScreen('mission');
   renderMissionUI();
   setupBoard('dartboard-canvas',throwDart);
+  activateInput(missionDartTitle(),throwDart,undoLastDart);
+}
+
+function missionDartTitle(){
+  return G.roundIdx<3?`ROUND ${G.roundIdx+1} · DART ${G.dartIdx+1}`:'COMPLETE';
 }
 
 function renderMissionUI(){
-  const m=G.mission;
   document.getElementById('m-num').textContent=String(G.missionNum).padStart(2,'0');
-  document.getElementById('m-tier').textContent=TIER_NAMES[m.tier];
-  document.getElementById('m-depth').textContent=(G.missionNum-1)*50;
+  document.getElementById('m-tier').textContent=TIER_NAMES[G.mission.tier];
   document.getElementById('m-xp').textContent=pad(G.xp);
-  document.getElementById('m-pot-xp').textContent='+'+m.goals.reduce((s,g)=>s+g.xp,0);
+  document.getElementById('m-pot-xp').textContent='(pot. +'+G.mission.goals.reduce((s,g)=>s+g.xp,0)+' xp)';
   document.getElementById('mission-summary').style.display='none';
-  const gl=document.getElementById('goals-list');
-  gl.innerHTML='';
-  m.goals.forEach((g,i)=>{
-    const d=document.createElement('div');
-    d.className='goal-item';d.id=`goal-${i}`;
-    d.innerHTML=`<span class="goal-check">□</span>
-      <span class="goal-text">${g.desc}</span>
-      <span class="goal-xp">+${g.xp}xp</span>`;
+  const gl=document.getElementById('goals-list');gl.innerHTML='';
+  G.mission.goals.forEach((g,i)=>{
+    const d=document.createElement('div');d.className='goal-item';d.id=`goal-${i}`;
+    d.innerHTML=`<span class="goal-check">□</span><span class="goal-text">${g.desc}</span><span class="goal-xp">+${g.xp}</span>`;
     gl.appendChild(d);
   });
-  renderRoundsDisplay();
-  updateDartPrompt();
-  document.getElementById('btn-miss').disabled=false;
-  document.getElementById('btn-undo').disabled=false;
+  renderRoundsDisplay();updateDartPrompt();
   redrawMissionBoard();
 }
 
 function renderRoundsDisplay(){
-  const rd=document.getElementById('rounds-display');
-  rd.innerHTML='';
+  const rd=document.getElementById('rounds-display');rd.innerHTML='';
   for(let r=0;r<3;r++){
     const row=document.createElement('div');row.className='round-row';
     let score=0,slots='';
     for(let d=0;d<3;d++){
       const dart=G.rounds[r]&&G.rounds[r][d];
       let cls='dart-slot',lbl='';
-      if(dart){
-        score+=dart.score;
-        if(dart.type==='triple')cls+=' hit-triple';
-        else if(dart.type==='double')cls+=' hit-double';
-        else if(dart.type==='bull'||dart.type==='bullseye')cls+=' hit-bull';
-        else if(dart.type==='miss')cls+=' hit-miss';
-        else cls+=' hit-single';
+      if(dart){score+=dart.score;
+        cls+=' hit-'+(dart.type==='triple'?'triple':dart.type==='double'?'double':(dart.type==='bull'||dart.type==='bullseye')?'bull':dart.type==='miss'?'miss':'single');
         lbl=dart.label;
-      }else if(r===G.roundIdx&&d===G.dartIdx&&G.roundIdx<3){
-        cls+=' current';lbl='▮';
-      }
+      }else if(r===G.roundIdx&&d===G.dartIdx&&G.roundIdx<3){cls+=' current';lbl='▮';}
       slots+=`<div class="${cls}">${lbl}</div>`;
     }
-    const rSc=G.rounds[r]&&G.rounds[r].length===3
-      ?`<span class="round-score">${score}</span>`
-      :'<span class="round-score"></span>';
-    row.innerHTML=`<span class="round-label">RND ${r+1}</span>
-      <div class="dart-slots">${slots}</div>${rSc}`;
+    const rSc=G.rounds[r]&&G.rounds[r].length===3?`<span class="round-score">${score}</span>`:'<span class="round-score"></span>';
+    row.innerHTML=`<span class="round-label">RND ${r+1}</span><div class="dart-slots">${slots}</div>${rSc}`;
     rd.appendChild(row);
   }
 }
 
 function updateDartPrompt(){
-  const el=document.getElementById('dart-prompt');if(!el)return;
-  el.textContent=G.roundIdx<3?`ROUND ${G.roundIdx+1} · DART ${G.dartIdx+1}`:'ALL DARTS THROWN';
+  const t=missionDartTitle();
+  const el=document.getElementById('dart-prompt');if(el)el.textContent=t;
+  const el2=document.getElementById('dp-title-m');if(el2)el2.textContent=t;
+  document.getElementById('dp-title').textContent=t;
 }
 
 function redrawMissionBoard(){
@@ -899,7 +820,8 @@ function throwDart(dart){
   G.rounds[G.roundIdx].push(dart);G.allDarts.push(dart);G.dartIdx++;
   if(G.dartIdx>=3){G.roundIdx++;G.dartIdx=0;}
   renderRoundsDisplay();updateDartPrompt();updateGoalStatus();redrawMissionBoard();
-  if(G.roundIdx>=3)finalizeMission();
+  if(G.roundIdx>=3){finalizeMission();}
+  else{activateInput(missionDartTitle(),throwDart,undoLastDart);}
 }
 
 function undoLastDart(){
@@ -909,14 +831,14 @@ function undoLastDart(){
   G.rounds=[[],[],[]];G.allDarts.forEach((d,i)=>G.rounds[Math.floor(i/3)].push(d));
   renderRoundsDisplay();updateDartPrompt();updateGoalStatus();redrawMissionBoard();
   document.getElementById('mission-summary').style.display='none';
-  document.getElementById('btn-miss').disabled=false;
+  activateInput(missionDartTitle(),throwDart,undoLastDart);
 }
 
 function updateGoalStatus(){
   if(!G.mission)return;
-  const doneRounds=G.rounds.filter(r=>r.length===3);
+  const cr=G.rounds.filter(r=>r.length===3);
   G.mission.goals.forEach((g,i)=>{
-    const done=evalGoal(g,G.allDarts,doneRounds);
+    const done=evalGoal(g,G.allDarts,cr);
     const el=document.getElementById(`goal-${i}`);if(!el)return;
     el.classList.toggle('done',done);
     el.querySelector('.goal-check').textContent=done?'✓':'□';
@@ -924,36 +846,24 @@ function updateGoalStatus(){
 }
 
 function finalizeMission(){
-  document.getElementById('btn-miss').disabled=true;
-  document.getElementById('btn-undo').disabled=true;
-  document.getElementById('dart-prompt').textContent='MISSION COMPLETE';
+  hideDartPanel();
   const cr=G.rounds.filter(r=>r.length===3);
   let gainedXP=0,completedGoals=0;
-  G.mission.goals.forEach(g=>{
-    if(evalGoal(g,G.allDarts,cr)){gainedXP+=g.xp;completedGoals++;}
-  });
+  G.mission.goals.forEach(g=>{if(evalGoal(g,G.allDarts,cr)){gainedXP+=g.xp;completedGoals++;}});
   G.xp+=gainedXP;G.completedGoals+=completedGoals;G.missionsCompleted++;
   const summary=document.getElementById('mission-summary');
-  const content=document.getElementById('summary-content');
-  content.innerHTML=G.mission.goals.map(g=>{
-    const done=evalGoal(g,G.allDarts,cr);
-    return `<div style="margin-bottom:4px">
-      ${done?'<span class="success">✓</span>':'<span class="danger">✗</span>'}
-      ${g.desc}
-      <span class="${done?'success':'dim'}">${done?'+'+g.xp:'0'} xp</span></div>`;
-  }).join('')+`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);
-    display:flex;justify-content:space-between">
-    <span class="label">XP GAINED</span>
-    <span class="val success">+${gainedXP}</span></div>`;
+  document.getElementById('summary-content').innerHTML=
+    G.mission.goals.map(g=>{
+      const done=evalGoal(g,G.allDarts,cr);
+      return`<div style="margin-bottom:4px">${done?'<span class="success">✓</span>':'<span class="danger">✗</span>'} ${g.desc} <span class="${done?'success':'dim'}">${done?'+'+g.xp:'0'} xp</span></div>`;
+    }).join('')+
+    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between"><span class="label">XP GAINED</span><span class="val success">+${gainedXP}</span></div>`;
   summary.style.display='block';
   document.getElementById('m-xp').textContent=pad(G.xp);
+  document.getElementById('dart-prompt').textContent='MISSION COMPLETE';
 }
 
-function afterMission(){
-  G.missionNum++;
-  if(G.missionsCompleted%2===0)beginScoringRound();
-  else beginMission();
-}
+function afterMission(){G.missionNum++;if(G.missionsCompleted%2===0)beginScoringRound();else beginMission();}
 
 // ═══════════════════════════════════════════════════════════
 // SCORING ROUND
@@ -961,6 +871,7 @@ function afterMission(){
 function beginScoringRound(){
   G.scoreDarts=[];showScreen('scoring');renderScoringUI();
   setupBoard('dartboard-canvas-s',throwScoringDart);
+  activateInput('DART '+(G.scoreDarts.length+1)+' / 9',throwScoringDart,undoScoringDart);
 }
 
 function renderScoringUI(){
@@ -968,46 +879,48 @@ function renderScoringUI(){
   for(let i=0;i<9;i++){
     const d=G.scoreDarts[i];
     let cls='scoring-slot',lbl='';
-    if(d){
-      if(d.type==='triple')cls+=' hit-triple';
-      else if(d.type==='double')cls+=' hit-double';
-      else if(d.type==='bull'||d.type==='bullseye')cls+=' hit-bull';
-      else if(d.type==='miss')cls+=' hit-miss';
-      lbl=d.label;
-    }else if(i===G.scoreDarts.length){cls+=' current';lbl='▮';}
+    if(d){cls+=' hit-'+(d.type==='triple'?'triple':d.type==='double'?'double':(d.type==='bull'||d.type==='bullseye')?'bull':d.type==='miss'?'miss':'single');lbl=d.label;}
+    else if(i===G.scoreDarts.length){cls+=' current';lbl='▮';}
     grid.innerHTML+=`<div class="${cls}">${lbl}</div>`;
   }
   const total=G.scoreDarts.reduce((s,d)=>s+d.score,0);
+  const thrown=G.scoreDarts.length;
   const xpGain=Math.floor(total/10);
   document.getElementById('scoring-total').textContent=total;
+  document.getElementById('scoring-avg').textContent=thrown?avg1dp(total,thrown)+'  /dart':'—';
   document.getElementById('scoring-xp-gain').textContent='+'+xpGain;
   document.getElementById('scoring-cur-xp').textContent=pad(G.xp);
   document.getElementById('scoring-done-panel').style.display='none';
-  drawBoard(document.getElementById('dartboard-canvas-s'),G.scoreDarts);
+  const c=document.getElementById('dartboard-canvas-s');if(c)drawBoard(c,G.scoreDarts);
 }
 
 function throwScoringDart(dart){
   if(G.scoreDarts.length>=9)return;
   G.scoreDarts.push(dart);renderScoringUI();
   if(G.scoreDarts.length>=9)finalizeScoring();
+  else activateInput('DART '+(G.scoreDarts.length+1)+' / 9',throwScoringDart,undoScoringDart);
 }
 
 function undoScoringDart(){
-  if(G.scoreDarts.length===0)return;
-  G.scoreDarts.pop();document.getElementById('scoring-done-panel').style.display='none';
+  if(!G.scoreDarts.length)return;
+  G.scoreDarts.pop();
+  document.getElementById('scoring-done-panel').style.display='none';
   renderScoringUI();
+  activateInput('DART '+(G.scoreDarts.length+1)+' / 9',throwScoringDart,undoScoringDart);
 }
 
 function finalizeScoring(){
+  hideDartPanel();
   const total=G.scoreDarts.reduce((s,d)=>s+d.score,0);
   const xpGain=Math.floor(total/10);
-  G.xp+=xpGain;G.lastScoreXP=xpGain;
+  G.xp+=xpGain;
+  const avg=avg1dp(total,9);
   document.getElementById('scoring-done-text').innerHTML=
-    `Score: <span class="val">${total}</span><br>
-     XP gained: <span class="success">+${xpGain}</span><br>
-     Total XP: <span class="val-lg">${pad(G.xp)}</span>`;
+    `Score: <span class="val">${total}</span> &nbsp; Avg: <span class="val">${avg}/dart</span><br>
+     XP gained: <span class="success">+${xpGain}</span> &nbsp; Total: <span class="val-lg">${pad(G.xp)}</span>`;
   document.getElementById('scoring-done-panel').style.display='block';
   document.getElementById('scoring-total').textContent=total;
+  document.getElementById('scoring-avg').textContent=avg+' /dart';
   document.getElementById('scoring-xp-gain').textContent='+'+xpGain;
   document.getElementById('scoring-cur-xp').textContent=pad(G.xp);
 }
@@ -1018,8 +931,6 @@ function afterScoring(){beginHunt();}
 // HUNT
 // ═══════════════════════════════════════════════════════════
 function beginHunt(){
-  // Threshold calibrated for weak player (~35 XP/cycle) to last ~5-7 cycles
-  // Step of 35 per hunt > avg player cycle gain, so tension increases over time
   const base=12+(G.huntNum-1)*35;
   G.huntThreshold=base+rnd(-8,8);
   showScreen('hunt');
@@ -1036,7 +947,6 @@ function runHuntAnimation(){
   const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2;
   let frame=0,pingAngle=0,blips=[];
   if(sonarAnim)cancelAnimationFrame(sonarAnim);
-
   function draw(){
     ctx.fillStyle='rgba(4,8,15,.85)';ctx.fillRect(0,0,W,H);
     ctx.strokeStyle='#1a3050';ctx.lineWidth=1;
@@ -1044,29 +954,16 @@ function runHuntAnimation(){
     ctx.beginPath();ctx.moveTo(cx,4);ctx.lineTo(cx,H-4);ctx.stroke();
     ctx.beginPath();ctx.moveTo(4,cy);ctx.lineTo(W-4,cy);ctx.stroke();
     const sweep=pingAngle*Math.PI/180;
-    for(let a=0;a<40;a++){
-      const sa=sweep-a*Math.PI/180;
-      ctx.strokeStyle=`rgba(30,180,80,${(40-a)/40*.5})`;ctx.lineWidth=1.5;
-      ctx.beginPath();ctx.moveTo(cx,cy);
-      ctx.lineTo(cx+cy*.95*Math.cos(sa),cy+cy*.95*Math.sin(sa));ctx.stroke();
-    }
-    ctx.strokeStyle='rgba(30,220,100,.9)';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+cy*.95*Math.cos(sweep),cy+cy*.95*Math.sin(sweep));ctx.stroke();
+    for(let a=0;a<40;a++){const sa=sweep-a*Math.PI/180;ctx.strokeStyle=`rgba(30,180,80,${(40-a)/40*.5})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+cy*.95*Math.cos(sa),cy+cy*.95*Math.sin(sa));ctx.stroke();}
+    ctx.strokeStyle='rgba(30,220,100,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+cy*.95*Math.cos(sweep),cy+cy*.95*Math.sin(sweep));ctx.stroke();
     blips=blips.filter(b=>b.life>0);
-    blips.forEach(b=>{
-      b.life--;
-      const bx=cx+b.dist*Math.cos(b.angle*Math.PI/180);
-      const by=cy+b.dist*Math.sin(b.angle*Math.PI/180);
-      ctx.fillStyle=`rgba(255,80,80,${b.life/60})`;
-      ctx.beginPath();ctx.arc(bx,by,4,0,Math.PI*2);ctx.fill();
-    });
+    blips.forEach(b=>{b.life--;const bx=cx+b.dist*Math.cos(b.angle*Math.PI/180),by=cy+b.dist*Math.sin(b.angle*Math.PI/180);ctx.fillStyle=`rgba(255,80,80,${b.life/60})`;ctx.beginPath();ctx.arc(bx,by,4,0,Math.PI*2);ctx.fill();});
     if(frame%55===0)blips.push({angle:pingAngle+rnd(-20,20),dist:cy*(.3+Math.random()*.5),life:80});
     pingAngle=(pingAngle+2)%360;frame++;
-    if(frame===1) document.getElementById('hunt-status').textContent='SCANNING...';
-    if(frame===60) document.getElementById('hunt-status').innerHTML='<span class="danger">ENEMY CONTACT!</span>';
-    if(frame===120) document.getElementById('hunt-status').innerHTML='<span class="danger">EVASION PROTOCOLS...</span>';
-    if(frame>=180){cancelAnimationFrame(sonarAnim);sonarAnim=null;resolveHunt();return;}
+    if(frame===1)document.getElementById('hunt-status').textContent='SCANNING...';
+    if(frame===60)document.getElementById('hunt-status').innerHTML='<span class="danger">ENEMY CONTACT!</span>';
+    if(frame===120)document.getElementById('hunt-status').innerHTML='<span class="danger">EVASION PROTOCOLS...</span>';
+    if(frame>=170){cancelAnimationFrame(sonarAnim);sonarAnim=null;resolveHunt();return;}
     sonarAnim=requestAnimationFrame(draw);
   }
   sonarAnim=requestAnimationFrame(draw);
@@ -1077,121 +974,107 @@ function resolveHunt(){
   const pct=Math.min(100,Math.round(G.xp/G.huntThreshold*100));
   const bc=survived?'success':'danger';
   document.getElementById('hunt-bars').innerHTML=`
-    <div class="bar-row">
-      <span class="bar-label">YOUR XP</span>
+    <div class="bar-row"><span class="bar-label">YOUR XP</span>
       <div class="bar-outer"><div class="bar-inner ${bc}" style="width:${pct}%"></div></div>
-      <span class="bar-val">${pad(G.xp)}</span>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label">THRESHOLD</span>
-      <div class="bar-outer"><div class="bar-inner" style="width:100%;background:var(--dim)"></div></div>
-      <span class="bar-val">${pad(G.huntThreshold)}</span>
-    </div>`;
-  const resultEl=document.getElementById('hunt-result');
-  const resultText=document.getElementById('hunt-result-text');
+      <span class="bar-val">${pad(G.xp)}</span></div>
+    <div class="bar-row"><span class="bar-label">THRESHOLD</span>
+      <div class="bar-outer"><div class="bar-inner dim" style="width:100%"></div></div>
+      <span class="bar-val">${pad(G.huntThreshold)}</span></div>`;
   const btn=document.getElementById('hunt-continue-btn');
-  resultEl.style.display='block';
+  document.getElementById('hunt-result').style.display='block';
   if(survived){
     document.getElementById('hunt-status').innerHTML='<span class="success">EVASION SUCCESSFUL</span>';
-    resultText.innerHTML='<span class="success">◈ ESCAPED ◈</span>';
-    btn.textContent='CONTINUE ▶';btn.className='btn-a';
-    btn.onclick=afterHunt;btn.style.display='inline-block';
+    document.getElementById('hunt-result-text').innerHTML='<span class="success">◈ ESCAPED ◈</span>';
+    btn.textContent='CONTINUE ▶';btn.className='btn-a';btn.onclick=afterHunt;
     G.huntsCompleted++;G.huntNum++;
   }else{
-    document.getElementById('hunt-status').innerHTML='<span class="danger">SONAR CONTACT! ENEMY CLOSING...</span>';
-    resultText.innerHTML='<span class="danger">◈ SUBMARINE DISCOVERED ◈</span>';
-    btn.textContent='⚔ ENGAGE DUEL';btn.className='btn-d';
-    btn.onclick=beginDuel;btn.style.display='inline-block';
+    document.getElementById('hunt-status').innerHTML='<span class="danger">SUBMARINE DETECTED!</span>';
+    document.getElementById('hunt-result-text').innerHTML='<span class="danger">◈ DUEL INITIATED ◈</span>';
+    btn.textContent='⚔ FIGHT';btn.className='btn-d';btn.onclick=beginDuel;
   }
 }
 
 function afterHunt(){beginMission();}
 
 // ═══════════════════════════════════════════════════════════
-// DUEL — 301 SINGLE IN / SINGLE OUT
+// DUEL — 301
 // ═══════════════════════════════════════════════════════════
-let DS={}; // duel state
+let DS={};
 
 function beginDuel(){
+  G.duelCount++;
+  // Enemy avg: based on number of duels fought (encounter-based, not stage-based)
+  // Duel 1 = easy (avg 20), increases by 7 each time, cap at 78
+  const enc=G.duelCount;
   DS={
     playerScore:301,enemyScore:301,
-    isPlayerTurn:true,
-    currentDarts:[],
+    isPlayerTurn:true,currentDarts:[],
     playerStartScore:301,enemyStartScore:301,
-    // Enemy avg per dart: starts at 25, increases by 5 per hunt
-    enemyAvg:Math.min(25+(G.huntNum-1)*5,78),
-    won:null,     // null | 'player' | 'enemy'
-    animating:false,
-    enemyRevealDarts:[],  // darts being animated for enemy turn
+    enemyAvg:Math.min(20+(enc-1)*7,78),
+    encounter:enc,
+    won:null,animating:false,enemyRevealDarts:[],
+    playerTotalScored:0,playerDartsThrown:0,
+    enemyTotalScored:0,enemyDartsThrown:0,
   };
-  document.getElementById('duel-hunt-num').textContent=String(G.huntNum).padStart(2,'0');
+  document.getElementById('duel-enc-num').textContent=enc;
   document.getElementById('duel-enemy-avg').textContent=DS.enemyAvg;
   document.getElementById('duel-result-overlay').classList.remove('show');
   showScreen('duel');
   setupBoard('dartboard-canvas-d',duelPlayerDart);
+  activateInput('DUEL · DART 1',duelPlayerDart,duelUndo);
   renderDuelUI();
 }
 
 function renderDuelUI(){
   document.getElementById('duel-player-score').textContent=DS.playerScore;
   document.getElementById('duel-enemy-score').textContent=DS.enemyScore;
+  // Averages
+  const pAvg=DS.playerDartsThrown?avg1dp(DS.playerTotalScored,DS.playerDartsThrown):'—';
+  const eAvg=DS.enemyDartsThrown?avg1dp(DS.enemyTotalScored,DS.enemyDartsThrown):'—';
+  document.getElementById('duel-player-avg-lbl').textContent=DS.playerDartsThrown?`AVG ${pAvg}/dart`:'';
+  document.getElementById('duel-enemy-avg-lbl').textContent=DS.enemyDartsThrown?`AVG ${eAvg}/dart`:'';
   const isActive=DS.isPlayerTurn&&!DS.animating&&DS.won===null;
   const lbl=document.getElementById('duel-turn-lbl');
-  if(DS.animating&&!DS.isPlayerTurn){
-    lbl.textContent='ENEMY THROWING...';lbl.style.color='var(--danger)';
-  }else if(isActive){
-    lbl.textContent=`YOUR THROW · DART ${DS.currentDarts.length+1}`;
-    lbl.style.color='var(--accent)';
-  }else if(DS.won){
-    lbl.textContent='';
-  }else{
-    lbl.textContent='WAIT...';lbl.style.color='var(--dim)';
+  if(DS.animating&&!DS.isPlayerTurn)lbl.textContent='ENEMY THROWING...';
+  else if(isActive)lbl.textContent=`YOUR THROW · DART ${DS.currentDarts.length+1}`;
+  else lbl.textContent=DS.won?'':'WAIT...';
+  if(lbl.style)lbl.style.color=isActive?'var(--accent)':'var(--danger)';
+  // Chips
+  document.getElementById('duel-player-chips').innerHTML=
+    DS.isPlayerTurn||DS.won?renderDuelChips(DS.currentDarts,3,isActive):'';
+  document.getElementById('duel-enemy-chips').innerHTML=
+    (!DS.isPlayerTurn||DS.won)?renderDuelChips(DS.enemyRevealDarts,3,false):'';
+  // Board
+  const bc=document.getElementById('dartboard-canvas-d');
+  if(bc)drawBoard(bc,DS.isPlayerTurn?DS.currentDarts:DS.enemyRevealDarts.map(d=>d._pos?{...d,...d._pos}:d));
+  // Input panel title
+  if(isActive){
+    document.getElementById('dp-title').textContent=`DUEL · DART ${DS.currentDarts.length+1}`;
+    document.getElementById('dart-panel').classList.add('visible');
   }
-  // Current darts chips
-  const pChips=document.getElementById('duel-player-chips');
-  const eChips=document.getElementById('duel-enemy-chips');
-  if(DS.isPlayerTurn||DS.won){
-    pChips.innerHTML=renderDuelChips(DS.currentDarts,3,isActive);
-    eChips.innerHTML='';
-  }else{
-    pChips.innerHTML='';
-    eChips.innerHTML=renderDuelChips(DS.enemyRevealDarts,3,false);
-  }
-  // Board: draw player's darts if their turn
-  const boardCanvas=document.getElementById('dartboard-canvas-d');
-  if(boardCanvas){
-    if(DS.isPlayerTurn)drawBoard(boardCanvas,DS.currentDarts);
-    else drawBoard(boardCanvas,DS.enemyRevealDarts.map(d=>d._pos?{...d,...d._pos}:d));
-  }
-  // Buttons
-  const dis=!isActive;
-  document.getElementById('duel-controls').querySelectorAll('button').forEach(b=>b.disabled=dis);
+  // Undo
+  if(document.getElementById('dp-undo'))
+    document.getElementById('dp-undo').disabled=!isActive||DS.currentDarts.length===0;
 }
 
-function renderDuelChips(darts,total,showCurrent){
-  let html='';
+function renderDuelChips(darts,total,showCur){
+  let h='';
   for(let i=0;i<total;i++){
     const d=darts[i];
-    if(d){
-      let cls='duel-chip';
+    if(d){let cls='duel-chip';
       if(d.busted)cls+=' bust-chip';
       else if(d.type==='triple')cls+=' triple';
       else if(d.type==='double')cls+=' double';
       else if(d.type==='miss')cls+=' miss-chip';
-      const lbl=d.busted?'BUST':d.label;
-      html+=`<div class="${cls} anim-in">${lbl}</div>`;
-    }else if(showCurrent&&i===darts.length){
-      html+=`<div class="duel-chip current-chip">▮</div>`;
-    }else{
-      html+=`<div class="duel-chip" style="opacity:.3">—</div>`;
-    }
+      h+=`<div class="${cls} anim-in">${d.busted?'BUST':d.label}</div>`;
+    }else if(showCur&&i===darts.length){h+=`<div class="duel-chip cur-chip">▮</div>`;}
+    else{h+=`<div class="duel-chip" style="opacity:.3">—</div>`;}
   }
-  return html;
+  return h;
 }
 
 function setDuelMsg(msg,color='var(--text)'){
-  const el=document.getElementById('duel-msg');
-  el.textContent=msg;el.style.color=color;
+  const el=document.getElementById('duel-msg');el.textContent=msg;el.style.color=color;
 }
 
 function duelPlayerDart(dart){
@@ -1199,7 +1082,6 @@ function duelPlayerDart(dart){
   if(DS.currentDarts.length>=3)return;
   const newScore=DS.playerScore-dart.score;
   if(newScore<0){
-    // Bust
     DS.currentDarts.push({...dart,busted:true});
     DS.animating=true;
     setDuelMsg('BUST! Score reverts.','var(--danger)');
@@ -1207,24 +1089,19 @@ function duelPlayerDart(dart){
     setTimeout(()=>{
       DS.playerScore=DS.playerStartScore;
       DS.currentDarts=[];DS.animating=false;
-      renderDuelUI();
+      setDuelMsg('');renderDuelUI();
       setTimeout(()=>startEnemyTurn(),600);
-    },1400);
+    },1300);
     return;
   }
-  DS.playerScore=newScore;
-  DS.currentDarts.push(dart);
-  setDuelMsg('');renderDuelUI();
+  DS.playerScore=newScore;DS.playerDartsThrown++;DS.playerTotalScored+=dart.score;
+  DS.currentDarts.push(dart);setDuelMsg('');renderDuelUI();
   if(newScore===0){duelWin('player');return;}
   if(DS.currentDarts.length>=3){
-    DS.animating=true;
-    renderDuelUI();
-    setTimeout(()=>{
-      DS.animating=false;
-      DS.currentDarts=[];
-      DS.playerStartScore=DS.playerScore;
-      startEnemyTurn();
-    },700);
+    DS.animating=true;renderDuelUI();
+    setTimeout(()=>{DS.animating=false;DS.currentDarts=[];DS.playerStartScore=DS.playerScore;startEnemyTurn();},700);
+  }else{
+    activateInput(`DUEL · DART ${DS.currentDarts.length+1}`,duelPlayerDart,duelUndo);
   }
 }
 
@@ -1232,135 +1109,97 @@ function duelUndo(){
   if(!DS.isPlayerTurn||DS.animating||DS.won!==null)return;
   if(DS.currentDarts.length===0)return;
   const last=DS.currentDarts.pop();
-  if(!last.busted)DS.playerScore+=last.score;
+  if(!last.busted){DS.playerScore+=last.score;DS.playerDartsThrown--;DS.playerTotalScored-=last.score;}
   setDuelMsg('');renderDuelUI();
 }
 
 function startEnemyTurn(){
   DS.isPlayerTurn=false;DS.animating=true;DS.enemyRevealDarts=[];
   DS.enemyStartScore=DS.enemyScore;
-  setDuelMsg('ENEMY AIMING...','var(--danger)');
-  renderDuelUI();
-  const result=generateEnemyTurn(DS.enemyScore,DS.enemyAvg);
-  const boardCanvas=document.getElementById('dartboard-canvas-d');
+  setDuelMsg('ENEMY AIMING...','var(--danger)');renderDuelUI();
+  const result=generateEnemyTurn(DS.enemyScore,DS.enemyAvg,DS.encounter);
+  const bc=document.getElementById('dartboard-canvas-d');
   let i=0;
   function revealNext(){
     if(i>=result.darts.length){
-      // All shown — apply final score
-      DS.enemyScore=result.finalScore;
-      DS.animating=false;
+      DS.enemyScore=result.finalScore;DS.animating=false;
       if(result.won){renderDuelUI();setTimeout(()=>duelWin('enemy'),400);return;}
       if(result.busted)setDuelMsg('ENEMY BUST!','var(--accent)');
       else setDuelMsg('');
       renderDuelUI();
-      // Switch back to player after pause
       setTimeout(()=>{
-        DS.isPlayerTurn=true;
-        DS.currentDarts=[];
-        DS.playerStartScore=DS.playerScore;
-        DS.enemyRevealDarts=[];
-        setDuelMsg('');renderDuelUI();
-      },1200);
+        DS.isPlayerTurn=true;DS.currentDarts=[];DS.playerStartScore=DS.playerScore;
+        DS.enemyRevealDarts=[];setDuelMsg('');renderDuelUI();
+        activateInput(`DUEL · DART 1`,duelPlayerDart,duelUndo);
+      },1100);
       return;
     }
     const d=result.darts[i];
-    // Compute canvas position for this dart
-    if(boardCanvas){
-      const pos=dartToCanvasPos(d,boardCanvas);
-      if(pos)d._pos={canvasX:pos.x,canvasY:pos.y};
-    }
+    if(bc){const pos=dartToPos(d,bc);if(pos)d._pos={canvasX:pos.x,canvasY:pos.y};}
     DS.enemyRevealDarts.push(d);
-    // Animate score ticking down
     if(!d.busted&&d.score>0){
+      DS.enemyDartsThrown++;DS.enemyTotalScored+=d.score;
       const tentative=Math.max(0,DS.enemyScore-d.score);
       document.getElementById('duel-enemy-score').textContent=tentative;
     }
-    renderDuelUI();
-    i++;setTimeout(revealNext,780);
+    renderDuelUI();i++;setTimeout(revealNext,780);
   }
-  setTimeout(revealNext,500);
+  setTimeout(revealNext,480);
 }
 
-function dartToCanvasPos(dart,canvas){
+function dartToPos(dart,canvas){
   if(!dart||dart.type==='miss')return null;
-  const R=Math.min(canvas.width,canvas.height)/2-14;
-  const cx=canvas.width/2,cy=canvas.height/2;
-  const r=f=>R*f;
-  if(dart.type==='bullseye'){
-    return{x:cx+rnd(-4,4),y:cy+rnd(-4,4)};
-  }
-  if(dart.type==='bull'){
-    const ang=Math.random()*Math.PI*2;
-    const rd=r((BR.bull+BR.bullseye)/2);
-    return{x:cx+rd*Math.cos(ang),y:cy+rd*Math.sin(ang)};
-  }
-  const segIdx=BOARD_NUMS.indexOf(dart.segment);
-  if(segIdx===-1)return null;
-  const baseAng=(segIdx*18-90)*Math.PI/180;
-  const spread=(Math.random()-.5)*14*Math.PI/180;
-  const ang=baseAng+spread;
-  let rd;
-  if(dart.type==='triple')rd=r((BR.tripleIn+BR.tripleOut)/2)+rnd(-5,5);
-  else if(dart.type==='double')rd=r((BR.doubleIn+BR.doubleOut)/2)+rnd(-5,5);
-  else rd=r((BR.bull+BR.tripleIn)/2)+rnd(-12,12);
-  return{x:cx+rd*Math.cos(ang),y:cy+rd*Math.sin(ang)};
+  const R=Math.min(canvas.width,canvas.height)/2-12;
+  const cx=canvas.width/2,cy=canvas.height/2,r=f=>R*f;
+  if(dart.type==='bullseye')return{x:cx+rnd(-4,4),y:cy+rnd(-4,4)};
+  if(dart.type==='bull'){const a=Math.random()*Math.PI*2,rd=r((BR.bull+BR.bullseye)/2);return{x:cx+rd*Math.cos(a),y:cy+rd*Math.sin(a)};}
+  const si=BOARD_NUMS.indexOf(dart.segment);if(si===-1)return null;
+  const ba=(si*18-90)*Math.PI/180,sp=(Math.random()-.5)*14*Math.PI/180,a=ba+sp;
+  let rd=dart.type==='triple'?r((BR.tripleIn+BR.tripleOut)/2)+rnd(-5,5):
+         dart.type==='double'?r((BR.doubleIn+BR.doubleOut)/2)+rnd(-5,5):
+         r((BR.bull+BR.tripleIn)/2)+rnd(-14,14);
+  return{x:cx+rd*Math.cos(a),y:cy+rd*Math.sin(a)};
 }
 
-// Compute a plausible dart label for a raw score value
 function scoreToLabel(score){
   score=Math.min(Math.max(0,Math.round(score)),60);
   if(score<=0)return{score:0,type:'miss',segment:null,label:'MISS'};
   if(score===50)return{score:50,type:'bullseye',segment:null,label:"BULL'S EYE"};
   if(score===25)return{score:25,type:'bull',segment:null,label:'BULL'};
-  if(score>=3&&score<=60&&score%3===0&&score/3<=20)
-    return{score,type:'triple',segment:score/3,label:`T${score/3}`};
-  if(score>=2&&score<=40&&score%2===0&&score/2<=20)
-    return{score,type:'double',segment:score/2,label:`D${score/2}`};
-  if(score>=1&&score<=20)
-    return{score,type:'single',segment:score,label:`${score}`};
-  // Find nearest valid dart score
-  let best=null,bestDiff=Infinity;
-  for(let s=1;s<=20;s++){
-    for(const v of [s,s*2,s*3]){
-      if(Math.abs(v-score)<bestDiff){
-        bestDiff=Math.abs(v-score);
-        best=v===s*3?{score:v,type:'triple',segment:s,label:`T${s}`}:
-             v===s*2?{score:v,type:'double',segment:s,label:`D${s}`}:
-                     {score:v,type:'single',segment:s,label:`${s}`};
-      }
-    }
-  }
-  for(const v of [25,50]){
-    if(Math.abs(v-score)<bestDiff){
-      bestDiff=Math.abs(v-score);
-      best=v===50?{score:50,type:'bullseye',segment:null,label:"BULL'S EYE"}:
-                  {score:25,type:'bull',segment:null,label:'BULL'};
-    }
-  }
+  if(score>=3&&score<=60&&score%3===0&&score/3<=20)return{score,type:'triple',segment:score/3,label:`T${score/3}`};
+  if(score>=2&&score<=40&&score%2===0&&score/2<=20)return{score,type:'double',segment:score/2,label:`D${score/2}`};
+  if(score>=1&&score<=20)return{score,type:'single',segment:score,label:`${score}`};
+  let best=null,bDiff=Infinity;
+  for(let s=1;s<=20;s++){for(const v of[s,s*2,s*3]){if(Math.abs(v-score)<bDiff){bDiff=Math.abs(v-score);best=v===s*3?{score:v,type:'triple',segment:s,label:`T${s}`}:v===s*2?{score:v,type:'double',segment:s,label:`D${s}`}:{score:v,type:'single',segment:s,label:`${s}`};}}}
+  for(const v of[25,50]){if(Math.abs(v-score)<bDiff){bDiff=Math.abs(v-score);best=v===50?{score:50,type:'bullseye',segment:null,label:"BULL'S EYE"}:{score:25,type:'bull',segment:null,label:'BULL'};}}
   return best||{score:1,type:'single',segment:1,label:'1'};
 }
 
-function generateEnemyTurn(startScore,avg){
+function generateEnemyTurn(startScore,avg,encounter){
+  // skill: 0 = encounter 1, grows toward 1 over encounters
+  // Controls how often the enemy plays conservatively in finish territory
+  const skill=Math.min(0.95,(encounter-1)*0.14);
+  const missChance=Math.max(0.03,0.25-(avg-20)*0.006);
+  const variance=Math.floor(avg*0.55);
   const darts=[];let tempScore=startScore,busted=false,won=false;
-  const missChance=Math.max(0.04,0.28-(avg-20)*0.007);
   for(let i=0;i<3;i++){
     if(busted||won)break;
-    let rawScore;
+    let targetScore;
     if(Math.random()<missChance){
-      rawScore=0;
+      targetScore=0;
     }else{
-      const variance=Math.floor(avg*.55);
-      rawScore=avg+rnd(-variance,variance);
-      rawScore=Math.min(Math.max(1,rawScore),60);
+      targetScore=avg+rnd(-variance,variance);
+      targetScore=Math.min(60,Math.max(1,targetScore));
+      // Smart finishing: when remaining is within reach of a bad throw,
+      // skilled enemy caps shot to avoid busting
+      if(tempScore<=avg+variance&&Math.random()<skill){
+        targetScore=Math.min(targetScore,tempScore);
+      }
     }
-    const dart=scoreToLabel(rawScore);
+    const dart=scoreToLabel(targetScore);
     const newTemp=tempScore-dart.score;
-    if(newTemp<0){
-      busted=true;darts.push({...dart,busted:true});
-    }else{
-      tempScore=newTemp;darts.push(dart);
-      if(tempScore===0)won=true;
-    }
+    if(newTemp<0){busted=true;darts.push({...dart,busted:true});}
+    else{tempScore=newTemp;darts.push(dart);if(tempScore===0)won=true;}
   }
   return{darts,finalScore:busted?startScore:tempScore,won,busted};
 }
@@ -1370,74 +1209,59 @@ function duelWin(winner){
   const overlay=document.getElementById('duel-result-overlay');
   const rText=document.getElementById('duel-result-text');
   const contBtn=document.getElementById('duel-continue-btn');
-  overlay.classList.add('show');
+  overlay.classList.add('show');hideDartPanel();
   if(winner==='player'){
     rText.innerHTML='<span class="success">◈ ENEMY ELIMINATED ◈<br>EVASION SUCCESSFUL</span>';
-    contBtn.textContent='ESCAPE ▶';contBtn.className='btn-s';
-    contBtn.style.display='inline-block';
+    contBtn.textContent='ESCAPE ▶';contBtn.className='btn-s';contBtn.style.display='inline-block';
   }else{
     rText.innerHTML='<span class="danger">◈ DUEL LOST ◈<br>SUBMARINE DESTROYED</span>';
-    contBtn.style.display='none';
-    setTimeout(()=>gameOver(),2200);
+    contBtn.style.display='none';setTimeout(()=>gameOver(),2000);
   }
 }
 
-function afterDuel(){
-  if(DS.won==='player'){
-    G.huntsCompleted++;G.huntNum++;
-    beginMission();
-  }
-}
+function afterDuel(){if(DS.won==='player'){G.huntsCompleted++;G.huntNum++;beginMission();}}
 
 // ═══════════════════════════════════════════════════════════
 // GAME OVER
 // ═══════════════════════════════════════════════════════════
 function gameOver(){
-  showScreen('gameover');
+  showScreen('gameover');hideDartPanel();
   document.getElementById('go-xp').textContent=pad(G.xp);
   document.getElementById('go-missions').textContent=G.missionsCompleted;
   document.getElementById('go-goals').textContent=G.completedGoals;
   document.getElementById('go-hunts').textContent=G.huntsCompleted;
-  document.getElementById('input-name').value='';
-  G.newScoreIndex=-1;
+  document.getElementById('go-duels').textContent=G.duelCount;
+  document.getElementById('input-name').value='';G.newScoreIndex=-1;
   setTimeout(()=>document.getElementById('input-name').focus(),100);
 }
 
 // ═══════════════════════════════════════════════════════════
 // HIGHSCORES
 // ═══════════════════════════════════════════════════════════
-function loadScores(){
-  try{return JSON.parse(localStorage.getItem('triple_submerge_hs')||'[]');}catch{return[];}
-}
+function loadScores(){try{return JSON.parse(localStorage.getItem('triple_submerge_hs')||'[]');}catch{return[];}}
 function saveScores(sc){localStorage.setItem('triple_submerge_hs',JSON.stringify(sc));}
 
 function submitScore(){
   const name=(document.getElementById('input-name').value.trim()||'CAPTAIN').toUpperCase().slice(0,10);
   const scores=loadScores();
-  const entry={name,xp:G.xp,missions:G.missionsCompleted,
-    goals:G.completedGoals,hunts:G.huntsCompleted,date:new Date().toISOString()};
+  const entry={name,xp:G.xp,missions:G.missionsCompleted,goals:G.completedGoals,
+    hunts:G.huntsCompleted,duels:G.duelCount,date:new Date().toISOString()};
   scores.push(entry);scores.sort((a,b)=>b.xp-a.xp);
-  const top=scores.slice(0,15);
-  G.newScoreIndex=top.indexOf(entry);
+  const top=scores.slice(0,15);G.newScoreIndex=top.indexOf(entry);
   saveScores(top);showScreen('highscores');
 }
 
 function renderHighscores(){
   const scores=loadScores();
   const tbody=document.getElementById('hs-body');
-  if(!scores.length){
-    tbody.innerHTML='<tr><td colspan="6" style="color:var(--dim);padding:20px;text-align:center">NO SCORES YET — BE THE FIRST CAPTAIN</td></tr>';
-    return;
-  }
-  tbody.innerHTML=scores.map((s,i)=>{
-    const isNew=G.newScoreIndex===i;
-    const medal=i===0?'▲':i===1?'▲':i===2?'▲':'';
-    return`<tr class="${isNew?'new-score':''}">
-      <td class="hs-rank">${i+1}</td><td>${s.name}</td>
-      <td><strong>${pad(s.xp)}</strong></td>
-      <td>${s.missions}</td><td>${s.goals}</td><td>${s.hunts}</td>
-    </tr>`;
-  }).join('');
+  if(!scores.length){tbody.innerHTML='<tr><td colspan="7" style="color:var(--dim);padding:16px;text-align:center">NO SCORES YET</td></tr>';return;}
+  tbody.innerHTML=scores.map((s,i)=>`<tr class="${G.newScoreIndex===i?'new-score':''}">
+    <td>${i+1}</td><td>${s.name}</td><td><strong>${pad(s.xp)}</strong></td>
+    <td class="hide-mobile">${s.missions||0}</td>
+    <td class="hide-mobile">${s.goals||0}</td>
+    <td>${s.hunts||0}</td>
+    <td class="hide-mobile">${s.duels||0}</td>
+  </tr>`).join('');
 }
 
 function renderMenuHs(){
@@ -1446,12 +1270,9 @@ function renderMenuHs(){
   if(!scores.length){el.style.display='none';return;}
   el.style.display='block';
   el.innerHTML='<h3 style="text-align:center;margin-bottom:8px">TOP CAPTAINS</h3>'+
-    scores.map((s,i)=>`<div style="display:flex;justify-content:space-between;
-      padding:3px 0;font-size:12px">
-      <span class="dim">${['I','II','III'][i]}.</span>
-      <span>${s.name}</span>
-      <span class="val">${pad(s.xp)} xp</span>
-    </div>`).join('');
+    scores.map((s,i)=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">
+      <span class="dim">${['I','II','III'][i]}.</span><span>${s.name}</span>
+      <span class="val">${pad(s.xp)} xp</span></div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
