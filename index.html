@@ -551,7 +551,10 @@ const GOAL_XP = {
   hit_any_triple:20,hit_specific_double:20,hit_specific_triple:30,hit_bull:25,
   more_evens:5,more_odds:5,round_only_odd:5,round_only_even:5,
   increasing_round:11,decreasing_round:12,
-  score_range_round:10,no_repeat_seg:8,score_exact_round:21
+  score_range_round:10,no_repeat_seg:8,score_exact_round:21,
+  // Post-500 XP elite goals
+  hit_two_doubles:26,hit_two_triples:31,hit_specific_double_twice:31,
+  hit_specific_triple_twice:36,score_180:38
 };
 const SCORE_GT_RANGE={1:[18,38],2:[35,65],3:[60,90],4:[80,120]};
 const SCORE_LT_RANGE={2:[32,52],3:[24,42],4:[16,34]};
@@ -575,6 +578,8 @@ const TIER_GOALS={
      'score_range_round','no_repeat_seg','score_exact_round']
 };
 const TIER_RANGES={1:[20,30],2:[30,40],3:[40,50],4:[50,90]};
+const ELITE_GOALS=['hit_two_doubles','hit_two_triples','hit_specific_double_twice',
+  'hit_specific_triple_twice','score_180'];
 const TIER_NAMES={1:'TIER I',2:'TIER II',3:'TIER III',4:'TIER IV'};
 
 // ═══════════════════════════════════════════════════════════
@@ -692,6 +697,11 @@ function createGoal(type,tier=1){
     case 'score_range_round':{const lo=rnd(18,40);const hi=lo+5;return{type,lo,hi,xp:10,desc:`Score between ${lo} and ${hi} in one round`};}
     case 'no_repeat_seg':return{type,xp:8,desc:'No segment hit more than 3 times (9 darts)'};
     case 'score_exact_round':{const t=rnd(15,45);return{type,target:t,xp:21,desc:`Score exactly ${t} in one round`};}
+    case 'hit_two_doubles':return{type,xp:26,desc:'Hit at least 2 doubles'};
+    case 'hit_two_triples':return{type,xp:31,desc:'Hit at least 2 triples'};
+    case 'hit_specific_double_twice':{const s=pick(NUMS_1_20);return{type,segment:s,xp:31,desc:`Hit D${s} twice`};}
+    case 'hit_specific_triple_twice':{const s=pick(NUMS_1_20);return{type,segment:s,xp:36,desc:`Hit T${s} twice`};}
+    case 'score_180':return{type,xp:38,desc:'Score 180 in one round (T20 T20 T20)'};
   }
 }
 
@@ -703,6 +713,7 @@ function goalsIdentical(a,b){
     case 'hit_specific_double':case 'hit_specific_triple':return a.segment===b.segment;
     case 'score_range_round':return a.lo===b.lo;
     case 'score_exact_round':return a.target===b.target;
+    case 'hit_specific_double_twice':case 'hit_specific_triple_twice':return a.segment===b.segment;
     default:return true;
   }
 }
@@ -729,6 +740,11 @@ function evalGoal(goal,allDarts,rounds){
     case 'score_range_round':return rounds.some(r=>{const s=r.reduce((t,d)=>t+d.score,0);return s>=goal.lo&&s<=goal.hi;});
     case 'no_repeat_seg':{const c={};allDarts.forEach(d=>{if(d.segment!==null)c[d.segment]=(c[d.segment]||0)+1;});return!Object.values(c).some(v=>v>3);}
     case 'score_exact_round':return rounds.some(r=>r.length===3&&r.reduce((t,d)=>t+d.score,0)===goal.target);
+    case 'hit_two_doubles':return allDarts.filter(d=>d.type==='double').length>=2;
+    case 'hit_two_triples':return allDarts.filter(d=>d.type==='triple').length>=2;
+    case 'hit_specific_double_twice':return allDarts.filter(d=>d.type==='double'&&d.segment===goal.segment).length>=2;
+    case 'hit_specific_triple_twice':return allDarts.filter(d=>d.type==='triple'&&d.segment===goal.segment).length>=2;
+    case 'score_180':return rounds.some(r=>r.length===3&&r.reduce((t,d)=>t+d.score,0)===180);
   }
   return false;
 }
@@ -738,7 +754,10 @@ function getMissionTier(n){if(n<=2)return 1;if(n<=6)return 2;if(n<=12)return 3;r
 function generateMission(num){
   const tier=getMissionTier(num);
   const[minXP,maxXP]=TIER_RANGES[tier];
-  const types=TIER_GOALS[tier];
+  const elite=G.xp>=500;
+  // After 500 XP, mix in elite goals (roughly 1 per mission on average)
+  const baseTypes=TIER_GOALS[tier];
+  const types=elite?[...baseTypes,...ELITE_GOALS,...ELITE_GOALS]:baseTypes; // double weight elite
   for(let a=0;a<300;a++){
     const goals=[];
     for(let i=0;i<3;i++){
@@ -1064,7 +1083,9 @@ function diffMultiplier(){
 }
 
 function beginHunt(){
-  const base=Math.round((12+(G.huntNum-1)*35)*diffMultiplier());
+  // Post-500 XP: threshold grows 10% faster each hunt
+  const postBonus=G.victoryShown?Math.pow(1.10,G.huntNum-1):1;
+  const base=Math.round((12+(G.huntNum-1)*35)*diffMultiplier()*postBonus);
   G.huntThreshold=base+rnd(-8,8);
   showScreen('hunt');
   document.getElementById('hunt-num').textContent=String(G.huntNum).padStart(2,'0');
@@ -1145,10 +1166,11 @@ let DS={};
 function beginDuel(){
   G.duelCount++;
   const enc=G.duelCount;
-  // Enemy per-3-darts avg: starts at 30, +5 per encounter, scaled by difficulty
+  // Enemy per-3-darts avg: starts at 30, +5 per encounter (or +15 after victory), cap 120
   const dMult=G.difficulty==='general'?1.5:G.difficulty==='colonel'?1.2:1.0;
-  const baseTarget3=Math.min(30+(enc-1)*5,80); // 30,35,40,...,80
-  const displayAvg=Math.round(Math.min(baseTarget3*dMult,95));
+  const perDuelStep=G.victoryShown?15:5;
+  const baseTarget3=30+(enc-1)*perDuelStep;
+  const displayAvg=Math.round(Math.min(baseTarget3*dMult,120));
   // Bust budget: how many times the enemy is allowed to bust this whole duel
   // Early duels: 1-3, later duels converge toward 0-1
   const bustHi=enc<=2?3:enc===3?2:1;
@@ -1329,7 +1351,8 @@ function scoreToLabel(score){
 function generateEnemyTurn(startScore,encounter,dMult,bustBudget){
   const enc=encounter;
   const skill=Math.min(0.90,(enc-1)*0.10);
-  const target3=Math.min((30+(enc-1)*5)*dMult,95);
+  const perStep=G.victoryShown?15:5;
+  const target3=Math.min((30+(enc-1)*perStep)*dMult,120);
   const targetPerDart=target3/3;
   const missChance=Math.max(0.04,0.18-(enc-1)*0.015);
   const nonMissTarget=targetPerDart/Math.max(0.1,1-missChance);
