@@ -202,6 +202,31 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
 /* ════════════════════════════════════════════
    RESPONSIVE — mobile
 ════════════════════════════════════════════ */
+/* ── ITEM BAR ── */
+#item-bar{display:none;padding:6px 10px;gap:4px;flex-wrap:wrap;align-items:center;
+  background:var(--panel);border:2px solid var(--border)}
+#item-bar.has-items{display:flex}
+.item-icon{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;
+  font-size:17px;border:1px solid var(--border);background:var(--bg);
+  position:relative;cursor:default;flex-shrink:0;border-radius:2px;user-select:none}
+.item-icon.active-item{border:2px solid var(--gold);box-shadow:0 0 6px rgba(240,192,64,.6),inset 0 0 4px rgba(240,192,64,.15);cursor:pointer}
+.item-icon.active-item:hover{background:var(--border2)}
+.item-icon.active-item.disabled-item{border-color:var(--dim);box-shadow:none;cursor:default;opacity:.5}
+.item-count{position:absolute;top:-4px;right:-4px;background:var(--accent);color:var(--bg);
+  font-size:9px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.item-tip{display:none;position:absolute;bottom:44px;left:50%;transform:translateX(-50%);
+  background:var(--panel2);border:1px solid var(--border2);padding:6px 10px;
+  font-size:10px;letter-spacing:1px;white-space:nowrap;z-index:200;color:var(--bright);
+  pointer-events:none;min-width:160px;text-align:center;line-height:1.6}
+.item-tip .tip-name{color:var(--gold);display:block;margin-bottom:2px}
+.item-icon:hover .item-tip{display:block}
+.item-bar-label{font-size:9px;letter-spacing:2px;color:var(--dim);align-self:center;margin-right:4px}
+/* item award notification */
+#item-award{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:300;background:var(--panel2);border:2px solid var(--gold);padding:20px 28px;
+  text-align:center;gap:10px;flex-direction:column;align-items:center;min-width:240px}
+#item-award.show{display:flex}
+
 /* ── DIFFICULTY BUTTONS ── */
 .active-diff{background:var(--success);border-color:var(--success);color:var(--bg)}
 .btn-diff-gen{border-color:var(--danger);color:var(--danger)}
@@ -305,11 +330,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
       <span class="label">XP&nbsp;</span><span class="val-lg" id="m-xp">0000</span>
     </div>
   </div>
+  <!-- Item bar -->
+  <div id="item-bar">
+    <span class="item-bar-label">ITEMS</span>
+    <div id="item-icons"></div>
+  </div>
   <div class="mission-body">
     <!-- Left: goals + log -->
     <div class="mission-left">
       <div class="pnl">
-        <h3>OBJECTIVES &nbsp;<span id="m-pot-xp" style="color:var(--gold);font-weight:normal;font-size:10px"></span></h3>
+        <h3>OBJECTIVES &nbsp;<span id="m-pot-xp" style="color:var(--gold);font-weight:normal;font-size:10px"></span>
+          <span id="m-effect-tags" style="font-size:9px;letter-spacing:1px"></span></h3>
         <div id="goals-list"></div>
       </div>
       <div class="pnl">
@@ -505,6 +536,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
   </div>
 </div>
 
+<!-- Item award overlay -->
+<div id="item-award">
+  <div class="label" style="color:var(--gold);letter-spacing:4px">⊞ ITEM FOUND</div>
+  <div id="ia-icon" style="font-size:36px;margin:4px 0"></div>
+  <div id="ia-name" class="val" style="color:var(--bright)"></div>
+  <div id="ia-desc" style="font-size:11px;color:var(--dim);letter-spacing:1px;line-height:1.6;max-width:220px"></div>
+  <div id="ia-kind" style="font-size:9px;letter-spacing:2px"></div>
+  <button class="btn-s" onclick="closeItemAward()" style="margin-top:4px">COLLECT ▶</button>
+</div>
 </div><!-- #app -->
 
 <!-- ════════════════════════════════════════════
@@ -552,30 +592,48 @@ const GOAL_XP = {
   more_evens:5,more_odds:5,round_only_odd:5,round_only_even:5,
   increasing_round:11,decreasing_round:12,
   score_range_round:10,no_repeat_seg:8,score_exact_round:21,
+  // New basic goals
+  no_miss_9:5,hit_adjacent_round:14,last_dart_seg:15,
+  third_dart_each_round:26,third_dart_any_round:12,five_different_segs:9,
   // Post-500 XP elite goals
   hit_two_doubles:26,hit_two_triples:31,hit_specific_double_twice:31,
   hit_specific_triple_twice:36,score_180:38
 };
+
+const ITEM_DEFS={
+  new_orders:       {kind:'active', icon:'⟳', name:'New Orders',        desc:'Reroll this mission\'s goals\n(use before throwing any dart)'},
+  stronger_rockets: {kind:'active', icon:'⚡', name:'Stronger Rockets',  desc:'Double XP gained this mission\n(use before throwing any dart)'},
+  focus_objective:  {kind:'active', icon:'◎', name:'Focus on Objective', desc:'Next goal completed gives ×3 XP'},
+  atomic_shot:      {kind:'active', icon:'☢', name:'Atomic Shot',        desc:'First D.Bullseye this mission\ngives +50 bonus XP'},
+  medal_of_honor:   {kind:'passive',icon:'✦', name:'Medal of Honor',     desc:'Each completed goal gives +2 XP'},
+  target_acquisition:{kind:'passive',icon:'⊕',name:'Target Acquisition', desc:'+2 bonus XP per double/triple\nthrown in missions (stacks)'},
+  camouflage:       {kind:'passive',icon:'◆', name:'Camouflage',         desc:'30% chance to avoid duel\nwhen hunted'},
+  silent_hunter:    {kind:'passive',icon:'◈', name:'Silent Hunter',      desc:'First duel turn: throw 6 darts,\nbest 3 count as your score'},
+};
+const ACTIVE_ITEM_POOL=['new_orders','stronger_rockets','focus_objective','atomic_shot'];
+const PASSIVE_ITEM_POOL=['medal_of_honor','target_acquisition','camouflage','silent_hunter'];
 const SCORE_GT_RANGE={1:[18,38],2:[35,65],3:[60,90],4:[80,120]};
 const SCORE_LT_RANGE={2:[32,52],3:[24,42],4:[16,34]};
+const NEW_BASIC_GOALS=['no_miss_9','hit_adjacent_round','last_dart_seg',
+  'third_dart_each_round','third_dart_any_round','five_different_segs'];
 const TIER_GOALS={
   1:['avoid_segments','score_greater','hit_segments','same_seg_9',
      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
-     'score_range_round','no_repeat_seg'],
+     'score_range_round','no_repeat_seg',...NEW_BASIC_GOALS],
   2:['avoid_segments','score_greater','hit_segments','same_seg_9',
      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
      'score_lesser','same_seg_round','hit_any_double','decreasing_round',
-     'score_range_round','no_repeat_seg','score_exact_round'],
+     'score_range_round','no_repeat_seg','score_exact_round',...NEW_BASIC_GOALS],
   3:['avoid_segments','score_greater','hit_segments','same_seg_9',
      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
      'score_lesser','same_seg_round','hit_any_double','decreasing_round',
      'hit_any_triple','hit_specific_double','hit_bull',
-     'score_range_round','no_repeat_seg','score_exact_round'],
+     'score_range_round','no_repeat_seg','score_exact_round',...NEW_BASIC_GOALS],
   4:['avoid_segments','score_greater','hit_segments','same_seg_9',
      'more_evens','more_odds','round_only_odd','round_only_even','increasing_round',
      'score_lesser','same_seg_round','hit_any_double','decreasing_round',
      'hit_any_triple','hit_specific_double','hit_bull','hit_specific_triple',
-     'score_range_round','no_repeat_seg','score_exact_round']
+     'score_range_round','no_repeat_seg','score_exact_round',...NEW_BASIC_GOALS]
 };
 const TIER_RANGES={1:[20,30],2:[30,40],3:[40,50],4:[50,90]};
 const ELITE_GOALS=['hit_two_doubles','hit_two_triples','hit_specific_double_twice',
@@ -592,10 +650,16 @@ let hsTab='captain';
 function initState(){
   G={
     missionNum:1,xp:0,completedGoals:0,missionsCompleted:0,
-    huntsCompleted:0,huntNum:1,duelCount:0, // duelCount: how many duels fought
+    huntsCompleted:0,huntNum:1,duelCount:0,
     mission:null,allDarts:[],rounds:[[],[],[]],roundIdx:0,dartIdx:0,
     scoreDarts:[],huntThreshold:0,newScoreIndex:-1,
     difficulty:'captain',victoryShown:false,
+    // Items
+    activeItems:[],   // array of item type strings (can repeat)
+    passiveItems:[],  // array of unique passive item types
+    // Per-mission effects (reset each mission)
+    missionEffects:{doubled:false,tripleNextGoal:false,atomicActive:false,atomicFired:false},
+    pendingItemAwardCb:null,
   };
 }
 
@@ -611,6 +675,10 @@ function pickN(arr,n){
   return r.slice(0,n);
 }
 function avg1dp(total,count){return count?+(total/count).toFixed(1):0;}
+// Score threshold scaling: +10 per completed hunt
+function progressBonus(){return Math.floor((G.huntNum-1)*10);}
+// Adjacent sectors on the board (wrapping ring)
+function adjacentSegsToIdx(idx){return[BOARD_NUMS[(idx+19)%20],BOARD_NUMS[(idx+1)%20]];}
 
 // ═══════════════════════════════════════════════════════════
 // DART INPUT PANEL
@@ -678,10 +746,10 @@ function hideDartPanel(){
 function createGoal(type,tier=1){
   switch(type){
     case 'avoid_segments':{const s=pickN(NUMS_1_20,3);return{type,segments:s,xp:5,desc:`Avoid segments ${s.join(', ')}`};}
-    case 'score_greater':{const[lo,hi]=SCORE_GT_RANGE[tier]||SCORE_GT_RANGE[4];const t=rnd(lo,hi);return{type,threshold:t,xp:7,desc:`Score >${t} in one round`};}
+    case 'score_greater':{const[lo,hi]=SCORE_GT_RANGE[tier]||SCORE_GT_RANGE[4];const pb=progressBonus();const t=rnd(lo+pb,hi+pb);return{type,threshold:t,xp:7,desc:`Score >${t} in one round`};}
     case 'hit_segments':{const s=pickN(NUMS_1_20,3);return{type,segments:s,xp:10,desc:`Hit segments ${s.join(', ')}`};}
     case 'same_seg_9':return{type,xp:8,desc:'Hit same segment ×3 in 9 darts'};
-    case 'score_lesser':{const[lo,hi]=SCORE_LT_RANGE[tier]||SCORE_LT_RANGE[4];const t=rnd(lo,hi);return{type,threshold:t,xp:12,desc:`Score <${t} in one round (no misses!)`};}
+    case 'score_lesser':{const[lo,hi]=SCORE_LT_RANGE[tier]||SCORE_LT_RANGE[4];const pb=progressBonus();const t=rnd(lo+pb,hi+pb);return{type,threshold:t,xp:12,desc:`Score <${t} in one round (no misses!)`};}
     case 'same_seg_round':return{type,xp:13,desc:'Hit same segment ×3 in one round'};
     case 'hit_any_double':return{type,xp:15,desc:'Hit any double'};
     case 'hit_any_triple':return{type,xp:20,desc:'Hit any triple'};
@@ -694,9 +762,15 @@ function createGoal(type,tier=1){
     case 'round_only_even':return{type,xp:5,desc:'Hit only even-numbered segments in one round'};
     case 'increasing_round':return{type,xp:11,desc:'Hit strictly increasing scores in one round'};
     case 'decreasing_round':return{type,xp:12,desc:'Hit strictly decreasing scores in one round'};
-    case 'score_range_round':{const lo=rnd(18,40);const hi=lo+5;return{type,lo,hi,xp:10,desc:`Score between ${lo} and ${hi} in one round`};}
+    case 'score_range_round':{const pb=progressBonus();const lo=rnd(18+pb,40+pb);const hi=lo+5;return{type,lo,hi,xp:10,desc:`Score between ${lo} and ${hi} in one round`};}
     case 'no_repeat_seg':return{type,xp:8,desc:'No segment hit more than 3 times (9 darts)'};
-    case 'score_exact_round':{const t=rnd(15,45);return{type,target:t,xp:21,desc:`Score exactly ${t} in one round`};}
+    case 'score_exact_round':{const pb=progressBonus();const t=rnd(15+pb,45+pb);return{type,target:t,xp:21,desc:`Score exactly ${t} in one round`};}
+    case 'no_miss_9':return{type,xp:5,desc:'Don\'t miss any of the 9 darts'};
+    case 'hit_adjacent_round':return{type,xp:14,desc:'Hit 3 different adjacent sectors in one round'};
+    case 'last_dart_seg':{const s=pick(NUMS_1_20);return{type,segment:s,xp:15,desc:`Last dart (9th) hits ${s}`};}
+    case 'third_dart_each_round':{const s=pick(NUMS_1_20);return{type,segment:s,xp:26,desc:`3rd dart of every round hits ${s}`};}
+    case 'third_dart_any_round':{const s=pick(NUMS_1_20);return{type,segment:s,xp:12,desc:`3rd dart in any round hits ${s}`};}
+    case 'five_different_segs':return{type,xp:9,desc:'Hit at least 5 different sectors (9 darts)'};
     case 'hit_two_doubles':return{type,xp:26,desc:'Hit at least 2 doubles'};
     case 'hit_two_triples':return{type,xp:31,desc:'Hit at least 2 triples'};
     case 'hit_specific_double_twice':{const s=pick(NUMS_1_20);return{type,segment:s,xp:31,desc:`Hit D${s} twice`};}
@@ -714,6 +788,7 @@ function goalsIdentical(a,b){
     case 'score_range_round':return a.lo===b.lo;
     case 'score_exact_round':return a.target===b.target;
     case 'hit_specific_double_twice':case 'hit_specific_triple_twice':return a.segment===b.segment;
+    case 'last_dart_seg':case 'third_dart_each_round':case 'third_dart_any_round':return a.segment===b.segment;
     default:return true;
   }
 }
@@ -740,6 +815,17 @@ function evalGoal(goal,allDarts,rounds){
     case 'score_range_round':return rounds.some(r=>{const s=r.reduce((t,d)=>t+d.score,0);return s>=goal.lo&&s<=goal.hi;});
     case 'no_repeat_seg':{const c={};allDarts.forEach(d=>{if(d.segment!==null)c[d.segment]=(c[d.segment]||0)+1;});return!Object.values(c).some(v=>v>3);}
     case 'score_exact_round':return rounds.some(r=>r.length===3&&r.reduce((t,d)=>t+d.score,0)===goal.target);
+    case 'no_miss_9':return allDarts.length===9&&!allDarts.some(d=>d.type==='miss');
+    case 'hit_adjacent_round':return rounds.some(r=>{
+      const segs=r.map(d=>d.segment).filter(s=>s!==null);
+      const uniq=[...new Set(segs)];if(uniq.length<3)return false;
+      for(let i=0;i<20;i++){const a=BOARD_NUMS[i],b=BOARD_NUMS[(i+1)%20],c=BOARD_NUMS[(i+2)%20];
+        const s=new Set(uniq);if(s.has(a)&&s.has(b)&&s.has(c))return true;}return false;});
+    case 'last_dart_seg':return allDarts.length===9&&allDarts[8].segment===goal.segment;
+    case 'third_dart_each_round':return rounds.filter(r=>r.length===3).length===3&&
+      rounds.every(r=>r.length===3&&r[2].segment===goal.segment);
+    case 'third_dart_any_round':return rounds.some(r=>r.length===3&&r[2].segment===goal.segment);
+    case 'five_different_segs':{const u=new Set(allDarts.map(d=>d.segment).filter(s=>s!==null));return u.size>=5;}
     case 'hit_two_doubles':return allDarts.filter(d=>d.type==='double').length>=2;
     case 'hit_two_triples':return allDarts.filter(d=>d.type==='triple').length>=2;
     case 'hit_specific_double_twice':return allDarts.filter(d=>d.type==='double'&&d.segment===goal.segment).length>=2;
@@ -853,6 +939,114 @@ function setupBoard(id,cb){
 }
 
 // ═══════════════════════════════════════════════════════════
+// ITEMS
+// ═══════════════════════════════════════════════════════════
+function awardItem(thenCb){
+  // Pick item: 50% chance active, 50% passive (but only if passive slot free)
+  const freePassives=PASSIVE_ITEM_POOL.filter(p=>!G.passiveItems.includes(p));
+  let pool=[];
+  if(Math.random()<0.5||!freePassives.length)pool=[...ACTIVE_ITEM_POOL];
+  else pool=freePassives;
+  if(!pool.length)pool=[...ACTIVE_ITEM_POOL]; // fallback
+  const id=pick(pool);
+  const def=ITEM_DEFS[id];
+  if(def.kind==='passive'){
+    if(!G.passiveItems.includes(id))G.passiveItems.push(id);
+  }else{
+    G.activeItems.push(id);
+  }
+  // Show award overlay, then call cb
+  G.pendingItemAwardCb=thenCb||null;
+  document.getElementById('ia-icon').textContent=def.icon;
+  document.getElementById('ia-name').textContent=def.name;
+  document.getElementById('ia-desc').textContent=def.desc.replace(/\n/g,' ');
+  document.getElementById('ia-kind').innerHTML=def.kind==='active'?
+    '<span style="color:var(--gold)">ACTIVE ITEM</span>':
+    '<span style="color:var(--dim)">PASSIVE ITEM</span>';
+  document.getElementById('item-award').classList.add('show');
+}
+
+function closeItemAward(){
+  document.getElementById('item-award').classList.remove('show');
+  const cb=G.pendingItemAwardCb;G.pendingItemAwardCb=null;
+  if(cb)cb();
+}
+
+function renderItemBar(missionActive){
+  const bar=document.getElementById('item-bar');
+  const icons=document.getElementById('item-icons');
+  const all=[...G.passiveItems,...G.activeItems];
+  if(!all.length){bar.classList.remove('has-items');return;}
+  bar.classList.add('has-items');
+  // Build icon list: passives first, then actives grouped
+  const counts={};G.activeItems.forEach(id=>{counts[id]=(counts[id]||0)+1;});
+  let html='';
+  // Passive icons (no shiny frame)
+  G.passiveItems.forEach(id=>{
+    const d=ITEM_DEFS[id];
+    html+=`<div class="item-icon" title="">
+      <span>${d.icon}</span>
+      <div class="item-tip"><span class="tip-name">${d.name}</span>${d.desc.replace(/\n/g,'<br>')}</div>
+    </div>`;
+  });
+  // Active icons (shiny frame, clickable during mission)
+  const seen=new Set();
+  G.activeItems.forEach(id=>{
+    if(seen.has(id))return;seen.add(id);
+    const d=ITEM_DEFS[id];const cnt=counts[id];
+    const disabled=!missionActive||G.allDarts.length>0&&(id==='new_orders'||id==='stronger_rockets');
+    html+=`<div class="item-icon active-item${disabled?' disabled-item':''}"
+      onclick="${missionActive&&!disabled?`useItem('${id}')`:''}" title="">
+      <span>${d.icon}</span>
+      ${cnt>1?`<span class="item-count">${cnt}</span>`:''}
+      <div class="item-tip"><span class="tip-name">${d.name}</span>${d.desc.replace(/\n/g,'<br>')}</div>
+    </div>`;
+  });
+  icons.innerHTML=html;
+}
+
+function useItem(id){
+  if(!G.activeItems.includes(id))return;
+  const def=ITEM_DEFS[id];
+  if(def.kind!=='active')return;
+  // Restrictions
+  if((id==='new_orders'||id==='stronger_rockets')&&G.allDarts.length>0){return;}
+  // Remove one from activeItems
+  const idx=G.activeItems.indexOf(id);G.activeItems.splice(idx,1);
+  switch(id){
+    case 'new_orders':
+      // Reroll goals
+      const{goals,tier}=generateMission(G.missionNum);
+      G.mission.goals=goals;
+      renderMissionUI();
+      break;
+    case 'stronger_rockets':
+      G.missionEffects.doubled=true;
+      updateEffectTags();
+      break;
+    case 'focus_objective':
+      G.missionEffects.tripleNextGoal=true;
+      updateEffectTags();
+      break;
+    case 'atomic_shot':
+      G.missionEffects.atomicActive=true;
+      G.missionEffects.atomicFired=false;
+      updateEffectTags();
+      break;
+  }
+  renderItemBar(true);
+}
+
+function updateEffectTags(){
+  const el=document.getElementById('m-effect-tags');if(!el)return;
+  let tags=[];
+  if(G.missionEffects.doubled)tags.push('<span style="color:var(--gold)">×2XP</span>');
+  if(G.missionEffects.tripleNextGoal)tags.push('<span style="color:var(--accent)">NEXT×3</span>');
+  if(G.missionEffects.atomicActive&&!G.missionEffects.atomicFired)tags.push('<span style="color:var(--danger)">☢ATOMIC</span>');
+  el.innerHTML=tags.join(' ');
+}
+
+// ═══════════════════════════════════════════════════════════
 // SCREENS
 // ═══════════════════════════════════════════════════════════
 function showScreen(name){
@@ -901,6 +1095,7 @@ function togglePanelCollapse(){
 function beginMission(){
   const{goals,tier}=generateMission(G.missionNum);
   G.mission={goals,tier};G.allDarts=[];G.rounds=[[],[],[]];G.roundIdx=0;G.dartIdx=0;
+  G.missionEffects={doubled:false,tripleNextGoal:false,atomicActive:false,atomicFired:false};
   showScreen('mission');
   renderMissionUI();
   setupBoard('dartboard-canvas',throwDart);
@@ -917,6 +1112,8 @@ function renderMissionUI(){
   document.getElementById('m-xp').textContent=pad(G.xp);
   document.getElementById('m-pot-xp').textContent='(pot. +'+G.mission.goals.reduce((s,g)=>s+g.xp,0)+' xp)';
   document.getElementById('mission-summary').style.display='none';
+  updateEffectTags();
+  renderItemBar(true);
   const gl=document.getElementById('goals-list');gl.innerHTML='';
   G.mission.goals.forEach((g,i)=>{
     const d=document.createElement('div');d.className='goal-item';d.id=`goal-${i}`;
@@ -961,8 +1158,16 @@ function redrawMissionBoard(){
 function throwDart(dart){
   if(G.roundIdx>=3)return;
   G.rounds[G.roundIdx].push(dart);G.allDarts.push(dart);G.dartIdx++;
+  // Atomic shot: first double-bullseye = +50 XP
+  if(G.missionEffects.atomicActive&&!G.missionEffects.atomicFired&&dart.type==='bullseye'){
+    G.missionEffects.atomicFired=true;G.xp+=50;
+    document.getElementById('m-xp').textContent=pad(G.xp);
+    updateEffectTags();
+  }
   if(G.dartIdx>=3){G.roundIdx++;G.dartIdx=0;}
   renderRoundsDisplay();updateDartPrompt();updateGoalStatus();redrawMissionBoard();
+  // After first dart, new_orders and stronger_rockets become unavailable
+  if(G.allDarts.length===1)renderItemBar(true);
   if(G.roundIdx>=3){finalizeMission();}
   else{activateInput(missionDartTitle(),throwDart,undoLastDart);}
 }
@@ -989,24 +1194,39 @@ function updateGoalStatus(){
 }
 
 function finalizeMission(){
-  hideDartPanel();
+  hideDartPanel();renderItemBar(false);
   const cr=G.rounds.filter(r=>r.length===3);
+  // Goal XP — apply focus_objective (triple next) and medal_of_honor (+2/goal)
   let gainedXP=0,completedGoals=0;
-  G.mission.goals.forEach(g=>{if(evalGoal(g,G.allDarts,cr)){gainedXP+=g.xp;completedGoals++;}});
-  // Bonus XP for doubles and triples thrown in mission rounds
+  let tripleNext=G.missionEffects.tripleNextGoal;
+  const hasMedal=G.passiveItems.includes('medal_of_honor');
+  const goalLines=G.mission.goals.map(g=>{
+    const done=evalGoal(g,G.allDarts,cr);
+    if(!done)return{done,g,earned:0,label:''};
+    let earned=g.xp;
+    let mod='';
+    if(tripleNext){earned*=3;mod=' <span class="accent">×3</span>';tripleNext=false;G.missionEffects.tripleNextGoal=false;}
+    if(hasMedal){earned+=2;mod+=' <span style="color:var(--gold)">+2✦</span>';}
+    gainedXP+=earned;completedGoals++;
+    return{done,g,earned,label:`<div style="margin-bottom:4px"><span class="success">✓</span> ${g.desc} <span class="success">+${earned} xp</span>${mod}</div>`};
+  });
+  // Doubles/triples bonus (base: +2d +3t; target_acquisition adds +2 per)
   const doubles=G.allDarts.filter(d=>d.type==='double').length;
   const triples=G.allDarts.filter(d=>d.type==='triple').length;
-  const bonusXP=doubles*2+triples*3;
-  G.xp+=gainedXP+bonusXP;G.completedGoals+=completedGoals;G.missionsCompleted++;
-  const summary=document.getElementById('mission-summary');
-  const bonusLine=bonusXP>0?`<div style="margin-bottom:4px"><span class="accent">◈</span> Doubles ×${doubles} / Triples ×${triples} <span class="success">+${bonusXP} xp</span></div>`:'';
+  const hasTA=G.passiveItems.includes('target_acquisition');
+  const dBonus=hasTA?4:2,tBonus=hasTA?5:3;
+  const bonusXP=doubles*dBonus+triples*tBonus;
+  let totalGain=gainedXP+bonusXP;
+  // Stronger rockets: double all mission XP
+  if(G.missionEffects.doubled)totalGain*=2;
+  G.xp+=totalGain;G.completedGoals+=completedGoals;G.missionsCompleted++;
+  const bonusLine=bonusXP>0?`<div style="margin-bottom:4px"><span class="accent">◈</span> Doubles ×${doubles} / Triples ×${triples}${hasTA?' (×2 bonus)':''} <span class="success">+${G.missionEffects.doubled?bonusXP*2:bonusXP} xp</span></div>`:'';
+  const failLines=goalLines.filter(l=>!l.done).map(l=>`<div style="margin-bottom:4px"><span class="danger">✗</span> ${l.g.desc} <span class="dim">0 xp</span></div>`).join('');
+  const dblLine=G.missionEffects.doubled?`<div style="margin-bottom:4px"><span class="success">⚡</span> Stronger Rockets: ×2 all XP</div>`:'';
   document.getElementById('summary-content').innerHTML=
-    G.mission.goals.map(g=>{
-      const done=evalGoal(g,G.allDarts,cr);
-      return`<div style="margin-bottom:4px">${done?'<span class="success">✓</span>':'<span class="danger">✗</span>'} ${g.desc} <span class="${done?'success':'dim'}">${done?'+'+g.xp:'0'} xp</span></div>`;
-    }).join('')+bonusLine+
-    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between"><span class="label">XP GAINED</span><span class="val success">+${gainedXP+bonusXP}</span></div>`;
-  summary.style.display='block';
+    goalLines.filter(l=>l.done).map(l=>l.label).join('')+failLines+bonusLine+dblLine+
+    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between"><span class="label">XP GAINED</span><span class="val success">+${totalGain}</span></div>`;
+  document.getElementById('mission-summary').style.display='block';
   document.getElementById('m-xp').textContent=pad(G.xp);
   document.getElementById('dart-prompt').textContent='MISSION COMPLETE';
 }
@@ -1142,20 +1362,32 @@ function resolveHunt(){
     btn.textContent='CONTINUE ▶';btn.className='btn-a';btn.onclick=afterHunt;
     G.huntsCompleted++;G.huntNum++;
   }else{
-    document.getElementById('hunt-status').innerHTML='<span class="danger">SUBMARINE DETECTED!</span>';
-    document.getElementById('hunt-result-text').innerHTML='<span class="danger">◈ DUEL INITIATED ◈</span>';
-    btn.textContent='⚔ FIGHT';btn.className='btn-d';btn.onclick=beginDuel;
+    // Camouflage: 30% chance to avoid duel
+    if(G.passiveItems.includes('camouflage')&&Math.random()<0.30){
+      document.getElementById('hunt-status').innerHTML='<span class="success">CAMOUFLAGE ACTIVE — DUEL AVOIDED!</span>';
+      document.getElementById('hunt-result-text').innerHTML='<span class="success">◈ SLIPPED AWAY ◈</span>';
+      btn.textContent='CONTINUE ▶';btn.className='btn-a';
+      G.huntsCompleted++;G.huntNum++;
+      btn.onclick=afterHunt;
+    }else{
+      document.getElementById('hunt-status').innerHTML='<span class="danger">SUBMARINE DETECTED!</span>';
+      document.getElementById('hunt-result-text').innerHTML='<span class="danger">◈ DUEL INITIATED ◈</span>';
+      btn.textContent='⚔ FIGHT';btn.className='btn-d';btn.onclick=beginDuel;
+    }
   }
 }
 
 function afterHunt(){
-  if(!G.victoryShown&&G.xp>=500){
-    G.victoryShown=true;
-    document.getElementById('victory-xp').textContent=pad(G.xp);
-    showScreen('victory');
-  }else{
-    beginMission();
-  }
+  const checkVictory=()=>{
+    if(!G.victoryShown&&G.xp>=500){
+      G.victoryShown=true;
+      document.getElementById('victory-xp').textContent=pad(G.xp);
+      showScreen('victory');
+    }else{beginMission();}
+  };
+  if(G.huntsCompleted>0&&G.huntsCompleted%2===0){
+    awardItem(checkVictory);
+  }else{checkVictory();}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1176,17 +1408,20 @@ function beginDuel(){
   const bustHi=enc<=2?3:enc===3?2:1;
   const bustLo=enc===1?3:enc===2?2:enc===3?1:0;
   const maxBusts=rnd(bustLo,bustHi);
+  const silentHunter=G.passiveItems.includes('silent_hunter');
   DS={
     playerScore:301,enemyScore:301,
     isPlayerTurn:true,currentDarts:[],
     playerStartScore:301,enemyStartScore:301,
-    enemyAvg:displayAvg, // per-3-darts for display
+    enemyAvg:displayAvg,
     encounter:enc,
     diffMult:dMult,
-    bustBudget:maxBusts, // remaining busts allowed
+    bustBudget:maxBusts,
     won:null,animating:false,enemyRevealDarts:[],
     playerTotalScored:0,playerDartsThrown:0,
     enemyTotalScored:0,enemyDartsThrown:0,
+    silentFirstTurn:silentHunter, // throw 6, best 3 count
+    silentDarts:[], // collects all 6
   };
   document.getElementById('duel-enc-num').textContent=enc;
   document.getElementById('duel-enemy-avg').textContent=displayAvg+' /3darts';
@@ -1208,12 +1443,14 @@ function renderDuelUI(){
   const isActive=DS.isPlayerTurn&&!DS.animating&&DS.won===null;
   const lbl=document.getElementById('duel-turn-lbl');
   if(DS.animating&&!DS.isPlayerTurn)lbl.textContent='ENEMY THROWING...';
+  else if(isActive&&DS.silentFirstTurn)lbl.textContent=`◈ SILENT HUNTER · DART ${DS.silentDarts.length+1}/6`;
   else if(isActive)lbl.textContent=`YOUR THROW · DART ${DS.currentDarts.length+1}`;
   else lbl.textContent=DS.won?'':'WAIT...';
   if(lbl.style)lbl.style.color=isActive?'var(--accent)':'var(--danger)';
   // Chips
+  const playerChipCount=DS.silentFirstTurn?6:3;
   document.getElementById('duel-player-chips').innerHTML=
-    DS.isPlayerTurn||DS.won?renderDuelChips(DS.currentDarts,3,isActive):'';
+    DS.isPlayerTurn||DS.won?renderDuelChips(DS.currentDarts,playerChipCount,isActive):'';
   document.getElementById('duel-enemy-chips').innerHTML=
     (!DS.isPlayerTurn||DS.won)?renderDuelChips(DS.enemyRevealDarts,3,false):'';
   // Board
@@ -1251,6 +1488,33 @@ function setDuelMsg(msg,color='var(--text)'){
 
 function duelPlayerDart(dart){
   if(!DS.isPlayerTurn||DS.animating||DS.won!==null)return;
+  // Silent Hunter: first turn throws 6, best 3 scored
+  if(DS.silentFirstTurn){
+    DS.silentDarts.push(dart);
+    DS.currentDarts=[...DS.silentDarts]; // show all thrown so far
+    renderDuelUI();
+    const limit=6;
+    if(DS.silentDarts.length<limit){
+      activateInput(`SILENT HUNTER · DART ${DS.silentDarts.length+1}/6`,duelPlayerDart,duelUndo);
+      return;
+    }
+    // Pick best 3 (highest scores, no bust possible here since we just pick top 3)
+    const sorted=[...DS.silentDarts].sort((a,b)=>b.score-a.score).slice(0,3);
+    let tempScore=DS.playerScore;
+    let scored=[];
+    for(const d of sorted){
+      const ns=tempScore-d.score;
+      if(ns>=0){tempScore=ns;scored.push(d);DS.playerDartsThrown++;DS.playerTotalScored+=d.score;}
+      if(tempScore===0)break;
+    }
+    DS.playerScore=tempScore;DS.currentDarts=scored;DS.silentFirstTurn=false;
+    setDuelMsg('SILENT HUNTER — best 3 counted','var(--success)');
+    renderDuelUI();
+    if(tempScore===0){duelWin('player');return;}
+    DS.animating=true;
+    setTimeout(()=>{DS.animating=false;DS.currentDarts=[];DS.playerStartScore=DS.playerScore;startEnemyTurn();},1000);
+    return;
+  }
   if(DS.currentDarts.length>=3)return;
   const newScore=DS.playerScore-dart.score;
   if(newScore<0){
@@ -1279,6 +1543,11 @@ function duelPlayerDart(dart){
 
 function duelUndo(){
   if(!DS.isPlayerTurn||DS.animating||DS.won!==null)return;
+  if(DS.silentFirstTurn){
+    if(!DS.silentDarts.length)return;
+    DS.silentDarts.pop();DS.currentDarts=[...DS.silentDarts];
+    renderDuelUI();return;
+  }
   if(DS.currentDarts.length===0)return;
   const last=DS.currentDarts.pop();
   if(!last.busted){DS.playerScore+=last.score;DS.playerDartsThrown--;DS.playerTotalScored-=last.score;}
@@ -1422,13 +1691,16 @@ function duelWin(winner){
 function afterDuel(){
   if(DS.won==='player'){
     G.huntsCompleted++;G.huntNum++;
-    if(!G.victoryShown&&G.xp>=500){
-      G.victoryShown=true;
-      document.getElementById('victory-xp').textContent=pad(G.xp);
-      showScreen('victory');
-    }else{
-      beginMission();
-    }
+    const checkVictory=()=>{
+      if(!G.victoryShown&&G.xp>=500){
+        G.victoryShown=true;
+        document.getElementById('victory-xp').textContent=pad(G.xp);
+        showScreen('victory');
+      }else{beginMission();}
+    };
+    if(G.huntsCompleted>0&&G.huntsCompleted%2===0){
+      awardItem(checkVictory);
+    }else{checkVictory();}
   }
 }
 
