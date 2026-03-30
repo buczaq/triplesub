@@ -758,7 +758,7 @@ function createGoal(type,tier=1){
     case 'score_greater':{const[lo,hi]=SCORE_GT_RANGE[tier]||SCORE_GT_RANGE[4];const pb=progressBonus();const t=rnd(lo+pb,hi+pb);return{type,threshold:t,xp:7,desc:`Score >${t} in one round`};}
     case 'hit_segments':{const s=pickN(NUMS_1_20,3);return{type,segments:s,xp:10,desc:`Hit segments ${s.join(', ')}`};}
     case 'same_seg_9':return{type,xp:8,desc:'Hit same segment ×3 in 9 darts'};
-    case 'score_lesser':{const[lo,hi]=SCORE_LT_RANGE[tier]||SCORE_LT_RANGE[4];const pb=progressBonus();const t=rnd(lo+pb,hi+pb);return{type,threshold:t,xp:12,desc:`Score <${t} in one round (no misses!)`};}
+    case 'score_lesser':{const[lo,hi]=SCORE_LT_RANGE[tier]||SCORE_LT_RANGE[4];const shrink=Math.floor((G.huntNum-1)*1.5);const t=Math.max(3,rnd(lo-shrink,hi-shrink));return{type,threshold:t,xp:12,desc:`Score <${t} in one round (no misses!)`};}
     case 'same_seg_round':return{type,xp:13,desc:'Hit same segment ×3 in one round'};
     case 'hit_any_double':return{type,xp:15,desc:'Hit any double'};
     case 'hit_any_triple':return{type,xp:20,desc:'Hit any triple'};
