@@ -737,6 +737,7 @@ function activateInput(title,cb,undo){
   setMult(1);
   document.getElementById('dp-title').textContent=title||'THROW DART';
   document.getElementById('dart-panel').classList.add('visible');
+  const undoBtn=document.getElementById('dp-undo');if(undoBtn)undoBtn.disabled=false;
 }
 
 function hideDartPanel(){
