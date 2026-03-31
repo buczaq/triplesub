@@ -503,7 +503,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;
         <div><div class="label">DUELS</div><div class="val" id="go-duels">0</div></div>
       </div>
     </div>
-    <input type="text" id="input-name" maxlength="10" placeholder="CAPTAIN" autocomplete="off">
+    <input type="text" id="input-name" maxlength="10" placeholder="YOUR NAME" autocomplete="off">
     <button class="btn-s" onclick="submitScore()">⊞ SAVE LOCAL SCORE</button>
     <div id="go-online-wrap" style="display:none;flex-direction:column;align-items:center;gap:6px">
       <div style="font-size:10px;color:var(--gold);letter-spacing:2px">GENERAL DIFFICULTY — SUBMIT TO GLOBAL LEADERBOARD</div>
@@ -612,8 +612,8 @@ const GOAL_XP = {
 const ITEM_DEFS={
   new_orders:       {kind:'active', icon:'⟳', name:'New Orders',        desc:'Reroll this mission\'s goals\n(use before throwing any dart)'},
   stronger_rockets: {kind:'active', icon:'⚡', name:'Stronger Rockets',  desc:'Double XP gained this mission\n(use before throwing any dart)'},
-  focus_objective:  {kind:'active', icon:'◎', name:'Focus on Objective', desc:'Next goal completed gives ×3 XP'},
-  atomic_shot:      {kind:'active', icon:'☢', name:'Atomic Shot',        desc:'First D.Bullseye this mission\ngives +50 bonus XP'},
+  focus_objective:  {kind:'active', icon:'◎', name:'Focus on Objective', desc:'Highest XP goal completed\nthis mission gives ×3 XP'},
+  atomic_shot:      {kind:'active', icon:'☢', name:'Atomic Shot',        desc:'First Bullseye (50 pts) this mission\ngives +50 bonus XP'},
   medal_of_honor:   {kind:'passive',icon:'✦', name:'Medal of Honor',     desc:'Each completed goal gives +2 XP'},
   target_acquisition:{kind:'passive',icon:'⊕',name:'Target Acquisition', desc:'+2 bonus XP per double/triple\nthrown in missions (stacks)'},
   camouflage:       {kind:'passive',icon:'◆', name:'Camouflage',         desc:'30% chance to avoid duel\nwhen hunted'},
@@ -662,12 +662,12 @@ function initState(){
     huntsCompleted:0,huntNum:1,duelCount:0,
     mission:null,allDarts:[],rounds:[[],[],[]],roundIdx:0,dartIdx:0,
     scoreDarts:[],huntThreshold:0,newScoreIndex:-1,
-    difficulty:'captain',victoryShown:false,
+    difficulty:'captain',victoryShown:false,victoryHuntNum:0,
     // Items
     activeItems:[],   // array of item type strings (can repeat)
     passiveItems:[],  // array of unique passive item types
     // Per-mission effects (reset each mission)
-    missionEffects:{doubled:false,tripleNextGoal:false,atomicActive:false,atomicFired:false},
+    missionEffects:{doubled:false,tripleNextGoal:false,atomicActive:false,atomicFired:false,atomicXP:0,itemUsed:false},
     pendingItemAwardCb:null,
   };
 }
@@ -755,7 +755,7 @@ function hideDartPanel(){
 function createGoal(type,tier=1){
   switch(type){
     case 'avoid_segments':{const s=pickN(NUMS_1_20,3);return{type,segments:s,xp:5,desc:`Avoid segments ${s.join(', ')}`};}
-    case 'score_greater':{const[lo,hi]=SCORE_GT_RANGE[tier]||SCORE_GT_RANGE[4];const pb=progressBonus();const t=rnd(lo+pb,hi+pb);return{type,threshold:t,xp:7,desc:`Score >${t} in one round`};}
+    case 'score_greater':{const[lo,hi]=SCORE_GT_RANGE[tier]||SCORE_GT_RANGE[4];const pb=progressBonus();const t=Math.min(120,rnd(lo+pb,hi+pb));return{type,threshold:t,xp:7,desc:`Score >${t} in one round`};}
     case 'hit_segments':{const s=pickN(NUMS_1_20,3);return{type,segments:s,xp:10,desc:`Hit segments ${s.join(', ')}`};}
     case 'same_seg_9':return{type,xp:8,desc:'Hit same segment ×3 in 9 darts'};
     case 'score_lesser':{const[lo,hi]=SCORE_LT_RANGE[tier]||SCORE_LT_RANGE[4];const shrink=Math.floor((G.huntNum-1)*1.5);const t=Math.max(3,rnd(lo-shrink,hi-shrink));return{type,threshold:t,xp:12,desc:`Score <${t} in one round (no misses!)`};}
@@ -771,7 +771,7 @@ function createGoal(type,tier=1){
     case 'round_only_even':return{type,xp:5,desc:'Hit only even-numbered segments in one round'};
     case 'increasing_round':return{type,xp:11,desc:'Hit strictly increasing scores in one round'};
     case 'decreasing_round':return{type,xp:12,desc:'Hit strictly decreasing scores in one round'};
-    case 'score_range_round':{const pb=progressBonus();const lo=rnd(18+pb,40+pb);const hi=lo+5;return{type,lo,hi,xp:10,desc:`Score between ${lo} and ${hi} in one round`};}
+    case 'score_range_round':{const pb=progressBonus();const lo=Math.min(100,rnd(18+pb,40+pb));const hi=lo+5;return{type,lo,hi,xp:10,desc:`Score between ${lo} and ${hi} in one round`};}
     case 'no_repeat_seg':return{type,xp:8,desc:'No segment hit more than 3 times (9 darts)'};
     case 'score_exact_round':{const pb=progressBonus();const t=rnd(15+pb,45+pb);return{type,target:t,xp:21,desc:`Score exactly ${t} in one round`};}
     case 'no_miss_9':return{type,xp:5,desc:'Don\'t miss any of the 9 darts'};
@@ -810,7 +810,7 @@ function evalGoal(goal,allDarts,rounds){
     case 'same_seg_9':{const c={};allDarts.forEach(d=>{if(d.segment!==null)c[d.segment]=(c[d.segment]||0)+1;});return Object.values(c).some(v=>v>=3);}
     case 'score_lesser':return rounds.some(r=>!r.some(d=>d.type==='miss')&&r.reduce((s,d)=>s+d.score,0)<goal.threshold);
     case 'same_seg_round':return rounds.some(r=>r.length===3&&r[0].segment!==null&&r[0].segment===r[1].segment&&r[1].segment===r[2].segment);
-    case 'hit_any_double':return allDarts.some(d=>d.type==='double');
+    case 'hit_any_double':return allDarts.some(d=>d.type==='double'||d.type==='bullseye');
     case 'hit_any_triple':return allDarts.some(d=>d.type==='triple');
     case 'hit_specific_double':return allDarts.some(d=>d.type==='double'&&d.segment===goal.segment);
     case 'hit_specific_triple':return allDarts.some(d=>d.type==='triple'&&d.segment===goal.segment);
@@ -835,7 +835,7 @@ function evalGoal(goal,allDarts,rounds){
       rounds.every(r=>r.length===3&&r[2].segment===goal.segment);
     case 'third_dart_any_round':return rounds.some(r=>r.length===3&&r[2].segment===goal.segment);
     case 'five_different_segs':{const u=new Set(allDarts.map(d=>d.segment).filter(s=>s!==null));return u.size>=5;}
-    case 'hit_two_doubles':return allDarts.filter(d=>d.type==='double').length>=2;
+    case 'hit_two_doubles':return allDarts.filter(d=>d.type==='double'||d.type==='bullseye').length>=2;
     case 'hit_two_triples':return allDarts.filter(d=>d.type==='triple').length>=2;
     case 'hit_specific_double_twice':return allDarts.filter(d=>d.type==='double'&&d.segment===goal.segment).length>=2;
     case 'hit_specific_triple_twice':return allDarts.filter(d=>d.type==='triple'&&d.segment===goal.segment).length>=2;
@@ -1003,7 +1003,7 @@ function renderItemBar(missionActive){
   G.activeItems.forEach(id=>{
     if(seen.has(id))return;seen.add(id);
     const d=ITEM_DEFS[id];const cnt=counts[id];
-    const disabled=!missionActive||G.allDarts.length>0&&(id==='new_orders'||id==='stronger_rockets');
+    const disabled=!missionActive||G.missionEffects.itemUsed||(G.allDarts.length>0&&(id==='new_orders'||id==='stronger_rockets'));
     html+=`<div class="item-icon active-item${disabled?' disabled-item':''}"
       onclick="${missionActive&&!disabled?`useItem('${id}')`:''}" title="">
       <span>${d.icon}</span>
@@ -1018,10 +1018,13 @@ function useItem(id){
   if(!G.activeItems.includes(id))return;
   const def=ITEM_DEFS[id];
   if(def.kind!=='active')return;
+  // One active item per mission
+  if(G.missionEffects.itemUsed)return;
   // Restrictions
   if((id==='new_orders'||id==='stronger_rockets')&&G.allDarts.length>0){return;}
   // Remove one from activeItems
   const idx=G.activeItems.indexOf(id);G.activeItems.splice(idx,1);
+  G.missionEffects.itemUsed=true;
   switch(id){
     case 'new_orders':
       // Reroll goals
@@ -1106,7 +1109,7 @@ function togglePanelCollapse(){
 function beginMission(){
   const{goals,tier}=generateMission(G.missionNum);
   G.mission={goals,tier};G.allDarts=[];G.rounds=[[],[],[]];G.roundIdx=0;G.dartIdx=0;
-  G.missionEffects={doubled:false,tripleNextGoal:false,atomicActive:false,atomicFired:false};
+  G.missionEffects={doubled:false,tripleNextGoal:false,atomicActive:false,atomicFired:false,atomicXP:0,itemUsed:false};
   showScreen('mission');
   renderMissionUI();
   setupBoard('dartboard-canvas',throwDart);
@@ -1171,7 +1174,7 @@ function throwDart(dart){
   G.rounds[G.roundIdx].push(dart);G.allDarts.push(dart);G.dartIdx++;
   // Atomic shot: first double-bullseye = +50 XP
   if(G.missionEffects.atomicActive&&!G.missionEffects.atomicFired&&dart.type==='bullseye'){
-    G.missionEffects.atomicFired=true;G.xp+=50;
+    G.missionEffects.atomicFired=true;G.missionEffects.atomicXP=50;G.xp+=50;
     document.getElementById('m-xp').textContent=pad(G.xp);
     updateEffectTags();
   }
@@ -1207,22 +1210,32 @@ function updateGoalStatus(){
 function finalizeMission(){
   hideDartPanel();renderItemBar(false);
   const cr=G.rounds.filter(r=>r.length===3);
-  // Goal XP — apply focus_objective (triple next) and medal_of_honor (+2/goal)
-  let gainedXP=0,completedGoals=0;
-  let tripleNext=G.missionEffects.tripleNextGoal;
+  // Evaluate all goals first
   const hasMedal=G.passiveItems.includes('medal_of_honor');
-  const goalLines=G.mission.goals.map(g=>{
+  const evaluated=G.mission.goals.map(g=>{
     const done=evalGoal(g,G.allDarts,cr);
-    if(!done)return{done,g,earned:0,label:''};
-    let earned=g.xp;
+    return{done,g,baseXP:done?g.xp:0};
+  });
+  // Focus on Objective (×3): apply to highest-XP completed goal
+  let tripleAppliedIdx=-1;
+  if(G.missionEffects.tripleNextGoal){
+    let bestXP=-1,bestIdx=-1;
+    evaluated.forEach((e,i)=>{if(e.done&&e.baseXP>bestXP){bestXP=e.baseXP;bestIdx=i;}});
+    tripleAppliedIdx=bestIdx;
+  }
+  // Build goal lines and tally
+  let gainedXP=0,completedGoals=0;
+  const goalLines=evaluated.map((e,i)=>{
+    if(!e.done)return{done:false,g:e.g,earned:0,label:''};
+    let earned=e.baseXP;
     let mod='';
-    if(tripleNext){earned*=3;mod=' <span class="accent">×3</span>';tripleNext=false;G.missionEffects.tripleNextGoal=false;}
+    if(i===tripleAppliedIdx){earned*=3;mod=' <span class="accent">×3</span>';}
     if(hasMedal){earned+=2;mod+=' <span style="color:var(--gold)">+2✦</span>';}
     gainedXP+=earned;completedGoals++;
-    return{done,g,earned,label:`<div style="margin-bottom:4px"><span class="success">✓</span> ${g.desc} <span class="success">+${earned} xp</span>${mod}</div>`};
+    return{done:true,g:e.g,earned,label:`<div style="margin-bottom:4px"><span class="success">✓</span> ${e.g.desc} <span class="success">+${earned} xp</span>${mod}</div>`};
   });
-  // Doubles/triples bonus (base: +2d +3t; target_acquisition adds +2 per)
-  const doubles=G.allDarts.filter(d=>d.type==='double').length;
+  // Doubles/triples bonus (bullseye counts as double; target_acquisition adds +2 per)
+  const doubles=G.allDarts.filter(d=>d.type==='double'||d.type==='bullseye').length;
   const triples=G.allDarts.filter(d=>d.type==='triple').length;
   const hasTA=G.passiveItems.includes('target_acquisition');
   const dBonus=hasTA?4:2,tBonus=hasTA?5:3;
@@ -1231,18 +1244,29 @@ function finalizeMission(){
   // Stronger rockets: double all mission XP
   if(G.missionEffects.doubled)totalGain*=2;
   G.xp+=totalGain;G.completedGoals+=completedGoals;G.missionsCompleted++;
+  // Atomic Shot: already added to G.xp in throwDart; just show in summary
+  const atomicXP=G.missionEffects.atomicXP||0;
+  const atomicLine=atomicXP>0?`<div style="margin-bottom:4px"><span style="color:var(--danger)">☢</span> Atomic Shot <span class="success">+${atomicXP} xp</span></div>`:'';
   const bonusLine=bonusXP>0?`<div style="margin-bottom:4px"><span class="accent">◈</span> Doubles ×${doubles} / Triples ×${triples}${hasTA?' (×2 bonus)':''} <span class="success">+${G.missionEffects.doubled?bonusXP*2:bonusXP} xp</span></div>`:'';
   const failLines=goalLines.filter(l=>!l.done).map(l=>`<div style="margin-bottom:4px"><span class="danger">✗</span> ${l.g.desc} <span class="dim">0 xp</span></div>`).join('');
   const dblLine=G.missionEffects.doubled?`<div style="margin-bottom:4px"><span class="success">⚡</span> Stronger Rockets: ×2 all XP</div>`:'';
+  const displayTotal=totalGain+atomicXP;
   document.getElementById('summary-content').innerHTML=
-    goalLines.filter(l=>l.done).map(l=>l.label).join('')+failLines+bonusLine+dblLine+
-    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between"><span class="label">XP GAINED</span><span class="val success">+${totalGain}</span></div>`;
+    goalLines.filter(l=>l.done).map(l=>l.label).join('')+failLines+bonusLine+atomicLine+dblLine+
+    `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between"><span class="label">XP GAINED</span><span class="val success">+${displayTotal}</span></div>`;
   document.getElementById('mission-summary').style.display='block';
   document.getElementById('m-xp').textContent=pad(G.xp);
   document.getElementById('dart-prompt').textContent='MISSION COMPLETE';
 }
 
-function afterMission(){G.missionNum++;if(G.missionsCompleted%2===0)beginScoringRound();else beginMission();}
+function afterMission(){
+  G.missionNum++;
+  if(!G.victoryShown&&G.xp>=500){
+    G.victoryShown=true;G.victoryHuntNum=G.huntNum;
+    document.getElementById('victory-xp').textContent=pad(G.xp);
+    showScreen('victory');
+  }else if(G.missionsCompleted%2===0){beginScoringRound();}else{beginMission();}
+}
 
 // ═══════════════════════════════════════════════════════════
 // SCORING ROUND
@@ -1314,8 +1338,8 @@ function diffMultiplier(){
 }
 
 function beginHunt(){
-  // Post-500 XP: threshold grows 10% faster each hunt
-  const postBonus=G.victoryShown?Math.pow(1.10,G.huntNum-1):1;
+  // Post-500 XP: threshold grows 10% faster each hunt (counted from victory hunt)
+  const postBonus=G.victoryShown?Math.pow(1.10,G.huntNum-G.victoryHuntNum):1;
   const base=Math.round((12+(G.huntNum-1)*35)*diffMultiplier()*postBonus);
   G.huntThreshold=base+rnd(-8,8);
   showScreen('hunt');
@@ -1391,7 +1415,7 @@ function resolveHunt(){
 function afterHunt(){
   const checkVictory=()=>{
     if(!G.victoryShown&&G.xp>=500){
-      G.victoryShown=true;
+      G.victoryShown=true;G.victoryHuntNum=G.huntNum;
       document.getElementById('victory-xp').textContent=pad(G.xp);
       showScreen('victory');
     }else{beginMission();}
@@ -1590,10 +1614,9 @@ function startEnemyTurn(){
     const d=result.darts[i];
     if(bc){const pos=dartToPos(d,bc);if(pos)d._pos={canvasX:pos.x,canvasY:pos.y};}
     DS.enemyRevealDarts.push(d);
-    if(!d.busted&&d.score>0){
+    if(!d.busted){
       DS.enemyDartsThrown++;DS.enemyTotalScored+=d.score;
-      const tentative=Math.max(0,DS.enemyScore-d.score);
-      document.getElementById('duel-enemy-score').textContent=tentative;
+      if(d.score>0){const tentative=Math.max(0,DS.enemyScore-d.score);document.getElementById('duel-enemy-score').textContent=tentative;}
     }
     renderDuelUI();i++;setTimeout(revealNext,780);
   }
@@ -1634,7 +1657,7 @@ function generateEnemyTurn(startScore,encounter,dMult,bustBudget){
   const perStep=G.victoryShown?15:5;
   const target3=Math.min((30+(enc-1)*perStep)*dMult,150);
   const targetPerDart=target3/3;
-  const missChance=Math.max(0.04,0.18-(enc-1)*0.015);
+  const missChance=G.victoryShown?0:Math.max(0.04,0.18-(enc-1)*0.015);
   const nonMissTarget=targetPerDart/Math.max(0.1,1-missChance);
   const tripleProb=Math.min(0.12,0.005+skill*0.13);
   const doubleProb=Math.min(0.28,0.015+skill*0.27);
@@ -1651,12 +1674,21 @@ function generateEnemyTurn(startScore,encounter,dMult,bustBudget){
     } else if(Math.random()<missChance){
       dart={score:0,type:'miss',segment:null,label:'MISS'};
     } else {
-      // Pick multiplier
-      const r=Math.random();
+      // Pick multiplier — force higher multis when target is too high for singles
       let mult;
-      if(r<tripleProb)mult=3;
-      else if(r<tripleProb+doubleProb)mult=2;
-      else mult=1;
+      if(nonMissTarget>40){
+        // Must use triples (or doubles) to reach target
+        mult=Math.random()<0.70?3:2;
+      }else if(nonMissTarget>20){
+        // Singles can't reach target; pick between double and triple
+        const tripleShare=tripleProb/(tripleProb+doubleProb||0.01);
+        mult=Math.random()<tripleShare?3:2;
+      }else{
+        const r=Math.random();
+        if(r<tripleProb)mult=3;
+        else if(r<tripleProb+doubleProb)mult=2;
+        else mult=1;
+      }
       const targetSeg=Math.round(nonMissTarget/mult);
       const variance=Math.max(3,Math.floor(targetSeg*0.55));
       let seg=Math.min(20,Math.max(1,targetSeg+rnd(-variance,variance)));
@@ -1704,7 +1736,7 @@ function afterDuel(){
     G.huntsCompleted++;G.huntNum++;
     const checkVictory=()=>{
       if(!G.victoryShown&&G.xp>=500){
-        G.victoryShown=true;
+        G.victoryShown=true;G.victoryHuntNum=G.huntNum;
         document.getElementById('victory-xp').textContent=pad(G.xp);
         showScreen('victory');
       }else{beginMission();}
